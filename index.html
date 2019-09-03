@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta http-equiv="x-ua-compatible" content="ie=edge" />
+		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+		<title>ProPresenter Watcher</title>
+
+		<style media="screen">
+			body {
+				margin: 10px auto;
+				width: 900px;
+				background: black;
+				color: ivory;
+				font-family: Muli, sans-serif;
+				box-sizing: border-box;
+			}
+			#app {
+				float: left;
+				width: 100%;
+				background: black;
+				color: ivory;
+				border: 1px solid ivory;
+				border-radius: 10px;
+				font-family: Muli, sans-serif;
+				padding: 10px;
+				box-sizing: border-box;
+			}
+			.main {
+				box-sizing: border-box;
+				position: relative;
+				width: 500px;
+				float: left;
+			}
+
+			.sidebar {
+				box-sizing: border-box;
+				position: relative;
+				width: 300px;
+				float: right;
+			}
+
+			clock {
+				position: absolute;
+				bottom: 10px;
+				right: 10px;
+				text-align: right;
+			}
+
+			h1 {
+				margin-top: 0;
+			}
+
+			li {
+				margin-bottom: 3px;
+				list-style: none;
+			}
+
+			label.text {
+				width: 300px;
+				display: inline-block;
+			}
+
+			input {
+				display: inline-block;
+				vertical-align: middle;
+				border: 1px solid #333;
+				border-radius: 2px;
+				background: none;
+				padding: 6px;
+				color: white;
+				font-family: Muli;
+			}
+
+			.box {
+				border: 1px solid #eee;
+				border-color: white;
+				border-radius: 3px;
+				background: #222;
+				padding: 20px;
+				font-size: 1.2em;
+				font-family: Muli;
+				font-weight: 600;
+			}
+			.current_slide .box {
+				border: 2px solid orange;
+			}
+
+			.disconnected {
+				border-color: red !important;
+			}
+			.connecting {
+				border-color: blue !important;
+			}
+
+			status {
+				position: absolute;
+				bottom: 10px;
+				left: 10px;
+				color: white;
+			}
+
+			.disconnected status {
+				color: red !important;
+			}
+
+			status .active {
+				color: green;
+			}
+
+			status .inactive {
+				color: red;
+			}
+
+			.vmix.sending {
+				color: blue;
+			}
+
+			.vmix.failed {
+				color: red;
+			}
+
+			.note {
+				white-space: pre;
+				font-size: 10px;
+				font-family: monospace;
+			}
+			.timer {
+				margin-bottom: 10px;
+			}
+			span.small {
+				font-size: 9px;
+			}
+			.logtext {
+				font-size: 9px;
+				white-space: pre-line;
+				overflow: hidden;
+			}
+		</style>
+		<meta charset="UTF-8" />
+	</head>
+
+	<body>
+		<div id="app" :class="state">
+			<clock>{{ pro6_status.system_time.text }}</clock>
+			<status v-if="connected">
+				PP:
+				<span :class="{active: pro6_status.active, inactive: !pro6_status.active}">
+					{{ pro6_status.active ? "ACTIVE" : "INACTIVE" }}
+				</span>
+				| VMIX: <span class="vmix">{{ vmix_status }}</span>
+			</status>
+			<h1>ProPresenter Watcher</h1>
+			<hr />
+			<div class="sidebar" v-if="pro6_status.slides">
+				<div class="current_slide" v-if="pro6_status.slides.current">
+					<h3>Current Slide</h3>
+					<div class="box">
+						{{ pro6_status.slides.current.text }}
+						<div class="note">{{ pro6_status.slides.current.notes.replace(/\n/,' &bull; ') }}</div>
+					</div>
+				</div>
+				<div class="next_slide" v-if="pro6_status.slides.next">
+					<h3>Next Slide</h3>
+					<div class="box">
+						{{ pro6_status.slides.next.text }}
+						<div class="note">{{ pro6_status.slides.next.notes.replace(/\n/,' &bull; ') }}</div>
+					</div>
+				</div>
+				<div class="timers" v-if="pro6_status.timers">
+					<h3>Timers</h3>
+					<div class="timer" v-for="timer in pro6_status.timers">
+						<span class="small">{{ timer.uid }}</span>
+						<br />
+						{{ timer.text }} ({{ timer.seconds }}s)
+					</div>
+				</div>
+			</div>
+
+			<div class="main">
+				<h3>Configuration</h3>
+				<ul>
+					<li>
+						<label class="text">ProPresenter Host: </label>
+						<input @change="update_config" v-model="config.PRO6_HOST" />
+					</li>
+					<li>
+						<label class="text">ProPresenter Stage Display PW: </label>
+						<input @change="update_config" v-model="config.PRO6_SD_PASSWORD" />
+					</li>
+					<li>
+						<label class="text">ProPresenter Control PW: </label>
+						<input @change="update_config" v-model="config.PRO6_CONTROL_PASSWORD" />
+					</li>
+					<li>
+						<label class="text">vMix Address (IP:Port): </label>
+						<input @change="update_config" v-model="config.VMIX_HOST" />
+					</li>
+					<li>
+						<label class="text">vMix Input for Lyrics </label>
+						<input @change="update_config" v-model="config.VMIX_LYRICS_INPUT" />
+					</li>
+				</ul>
+				<h3>Triggers</h3>
+				<ul>
+					<li>
+						<label>
+							<input type="checkbox" v-model="allow_triggers" @change="update_allow_triggers" />
+							Triggers {{ triggerstatus }}
+						</label>
+					</li>
+					<hr />
+					<li v-for="trigger in triggers">
+						<label>
+							<input
+								:disabled="!allow_triggers"
+								type="checkbox"
+								@change="update_triggers"
+								v-model="trigger.enabled"
+							/>
+							{{ trigger.name }}
+						</label>
+					</li>
+				</ul>
+				<div class="logtext">
+					{{ logtext }}
+				</div>
+			</div>
+		</div>
+
+		<script type="text/javascript" src="lib/vue.js"></script>
+		<!-- <script src="https://cdn.jsdelivr.net/npm/vue"></script> -->
+
+		<!-- main code goes here -->
+		<script type="text/javascript">
+			let ws;
+			let reconnectTime = 3000;
+			let reconnectTimer = 0;
+			let app = new Vue({
+				el: "#app",
+				data: {
+					config: {},
+					triggers: {},
+					pro6_status: {},
+					vmix_status: "",
+					allow_triggers: true,
+					status: "",
+					connected: false,
+					connecting: false,
+					logs: [],
+				},
+				computed: {
+					pro6host() {
+						return `${this.config.PRO6_HOST}:${this.config.PRO6_PORT}`;
+					},
+					vmixhost() {
+						return this.config.VMIX_HOST;
+					},
+					triggerstatus() {
+						return this.allow_triggers ? "Enabled" : "Disabled";
+					},
+					state() {
+						return this.connected ? "connected" : this.connecting ? "connecting" : "disconnected";
+					},
+					logtext() {
+						if (this.logs.length > 8) {
+							this.logs.splice(0, this.logs.length - 8);
+						}
+						return this.logs.join("\n");
+					},
+				},
+				methods: {
+					update_config() {
+						ws.bettersend("config", this.config);
+					},
+					update_allow_triggers() {
+						ws.bettersend("toggle_allow_triggers", this.allow_triggers);
+					},
+					update_triggers() {
+						ws.bettersend("update_triggers", this.triggers);
+					},
+					log(s) {
+						console.log(s);
+
+						let t = s;
+						if (typeof s == "object") t = JSON.stringify(s);
+						this.logs.push(t);
+					},
+
+					getStatus() {
+						ws.bettersend("status");
+					},
+
+					connect() {
+						this.connecting = true;
+						this.log("attempting to reconnect to watcher service");
+
+						// connect the websocket
+						ws = new WebSocket(`ws://${document.location.host}`);
+						ws.bettersend = function(message = "", data = {}) {
+							ws.send(JSON.stringify({ message, data }));
+						};
+
+						ws.onmessage = (event) => {
+							let { message, data } = JSON.parse(event.data);
+							this.log(`"${message}" message received`);
+							switch (message) {
+								case "status":
+									this.config = data.config;
+									this.triggers = data.triggers;
+									this.allow_triggers = data.allow_triggers;
+									this.pro6_status = data.pro6_status;
+									this.vmix_status = data.vmix_status;
+									break;
+								case "vmix":
+									this.vmix_status = data;
+									break;
+							}
+							console.log(message);
+							console.log(data);
+						};
+						ws.onclose = (event) => {
+							this.connected = false;
+							this.log(
+								`disconnected from watcher service... reconnecting in ${reconnectTime / 1000} seconds`
+							);
+							reconnectTimer = setTimeout(() => {
+								this.connect();
+							}, reconnectTime);
+						};
+						ws.onopen = (event) => {
+							this.connected = true;
+							this.connecting = false;
+							this.log("Connected to watcher service");
+							this.getStatus();
+						};
+					},
+				},
+				mounted: function() {
+					this.connect();
+				},
+			});
+		</script>
+	</body>
+</html>

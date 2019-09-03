@@ -1,0 +1,17 @@
+{
+	"name": "propresenter-watcher",
+	"version": "1.0.0",
+	"description": "Watches an active ProPresenter instance using the StageDisplay API and runs commands based on ProPresenter events.",
+	"main": "app.js",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"author": "",
+	"license": "ISC",
+	"dependencies": {
+		"got": "^9.6.0",
+		"isomorphic-ws": "^4.0.1",
+		"socket.io": "^2.2.0",
+		"ws": "^7.1.2"
+	}
+}

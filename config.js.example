@@ -1,0 +1,13 @@
+const config = {
+	UI_SERVER_PORT: 7000,
+	PRO6_HOST: "127.0.0.1:12345",
+	PRO6_SD_PASSWORD: "password",
+	PRO6_CONTROL_PASSWORD: "password",
+	LCC_LIVE_URL: "https://example.org:8999", // no final slash
+	VMIX_HOST: "127.0.0.2:8088", // no final slash
+	VMIX_LYRICS_INPUT: 1,
+	LOGGER_URL: "https://example.org/log",
+	LOGGER_KEY: "apikey",
+};
+
+module.exports = config;
