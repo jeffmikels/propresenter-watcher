@@ -33,3 +33,23 @@ During installation, a number of node modules will be downloaded.
 However, the MIDI component of this system relies on the node-midi module which requires compiling rtmidi, and therefore, a compiler must be installed.
 
 For more information, visit the node-midi documentation here [https://github.com/justinlatimer/node-midi]
+
+## Configuration
+
+After installation is complete copy `config.js.example` to `config.js` and edit the file according to your system's needs.
+
+Note: ProPresenter will only open one network port, and the main network port takes precedence. In other words, save yourself some hassle and put the same port number in both fields of the ProPresenter Network configuration.
+
+## Setting Up Triggers
+
+Read the comments in the `app.js` file so you can understand the way the slide notes should be created in ProPresenter. Then, take a look at how the example triggers are configured and feel free to change them for your needs.
+
+## Using Live
+
+To run the app, open up a terminal / command window in the folder where this code is stored.
+
+```
+node app.js
+```
+
+Then, open a browser to `http://localhost:7000` (or whatever port you specified in the config.js file).
