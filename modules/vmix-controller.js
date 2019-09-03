@@ -24,7 +24,7 @@ class VmixController {
 					this.onupdate(this.lastmessage);
 				},
 				(err) => {
-					console.log(err);
+					// console.log(err);
 					this.lastmessage = "command failed";
 					this.onupdate(this.lastmessage);
 				}
