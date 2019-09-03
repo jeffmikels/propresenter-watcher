@@ -1,55 +1,23 @@
 // connects to ProPresenter 6 stage display (a websocket connection)
-// listens for slide change events
-// reads the notes field
-// sends out appropriate updates to live event and/or vmix
+// listens for events
+// runs triggers based on those events
+// see the documentation below
 "use strict";
-
-/* SLIDE NOTES DOCUMENTATION
-LIVE EVENTS:
-event[event_id]         ← requests control of an event
-live[progress_integer]  ← sends progress to the event as an integer
-
-VMIX:
-[novmix] ← if found, no vmix triggers will be processed
-
-vmix[transition_type, [input name/number], [transition duration milliseconds]]
-transition_type can be whatever transition vmix supports
-second two arguments are optional
-input defaults to whatever is set to Preview
-transition defaults to 1000 milliseconds
-
-vmixcut[input name/number]               ← shortcut to cut to an input (required)
-vmixfade[input name/number, duration]    ← shortcut to fade to an input (duration optional)
-
-vmixtext[input name/number, selected name/index]
-puts the current slide body text into the specified text box of the specified input
-selected name/index defaults to 0
-
-For advanced vMix control, put vMix API commands in JSON text between vmix tags
-[vmix]
-{
-	"Function": "Slide",
-	"Duration": 3000
-}
-[/vmix]
-
-NOTE: vMix API Documentation is here: https://www.vmix.com/help21/index.htm?DeveloperAPI.html
-NOTE: multiple vmix triggers of each type can be handled per slide.
-
-*/
 
 // ----- SETUP HAPPENS HERE ----------------
 
-// configuration
+// general configuration
 const config = require("./config.js");
 
 // modules
 const { Pro6Listener, Pro6Controller } = require("./modules/pro6.js");
-const LiveEventController = require("./modules/live-event-controller.js");
-const VmixController = require("./modules/vmix-controller.js");
+const { LiveEventController } = require("./modules/live-event-controller.js");
+const { VmixController } = require("./modules/vmix-controller.js");
+const { Midi } = require("./modules/midi.js");
 
+// web logger
 let Log = console.log;
-if (config.useweblog) {
+if (config.USEWEBLOG) {
 	const WebLogger = require("./modules/web-logger.js");
 	const weblog = new WebLogger(config.LOGGER_URL, config.LOGGER_KEY);
 	Log = function(s, allowWebLog = true) {
@@ -64,10 +32,22 @@ let lec = new LiveEventController(config.LCC_LIVE_URL, 0);
 // VMIX API HANDLER
 let vmix = new VmixController("http://" + config.VMIX_HOST);
 
+// MIDI HANDLER
+let midi = new Midi();
+if (config.MIDI_PORT) midi.openPort(config.MIDI_PORT);
+
 // global ProPresenterListener for future use;
 let pl;
 
+//
+//
+//
+//
 // (-- THIS IS WHERE THE MAGIC HAPPENS --)
+//
+//
+//
+//
 // TRIGGERS
 // triggers have the pattern
 // {
@@ -76,22 +56,82 @@ let pl;
 // 	test: function returning a boolean called with this data object,
 // 	callback: function to call if there was a match (argument is the proper data object),
 // }
-let allow_triggers = true;
 
-// slide note search patterns
+// TRIGGERS REGEX DOCUMENTATION
+// LIVE EVENTS:
+// [sermon_start]          ← used to flag the web-logger, timers, or other things
+// event[event_id]         ← requests control of an event
+// live[progress_integer]  ← sends progress to the event as an integer
 const sermon_start_pattern = /\[sermon_start\]/i;
 const live_event_pattern = /event\[(\d+)\]/i;
 const live_progress_pattern = /live\[(\d+)\]/i;
+
+// VMIX:
+// [novmix] ← if found on a slide, no vmix triggers will be processed for that slide
 const vmix_ignore_pattern = /\[novmix\]/i;
 
-// vmix[(transition name),(input name/number optional),(transition duration)]
+// vmix[transition_type, [input name/number], [transition duration milliseconds]]
+// transition_type can be whatever transition vmix supports
+// second two arguments are optional
+// input defaults to whatever is set to Preview
+// transition defaults to 1000 milliseconds
 const vmix_trans_pattern = /vmix\[(\w+)\s*(?:,\s*(.+?))?\s*(?:,\s*(\d+))?\s*\]/gi;
-const vmix_fade_pattern = /vmixfade\[(.+?)\s*(?:,\s*(\d+))?\s*\]/gi;
+
+// vmixcut[input name/number]               ← shortcut to cut to an input (required)
 const vmix_cut_pattern = /vmixcut\[(.+?)\s*\]/gi;
-// inside the bracket, the arguments should be input name or number, selected name
-const vmix_text_pattern = /vmixtext\[(.+?)\s*(?:,\s*(.+?))?\s*\]/gi;
+
+// vmixfade[input name/number, duration]    ← shortcut to fade to an input (duration optional)
+const vmix_fade_pattern = /vmixfade\[(.+?)\s*(?:,\s*(\d+))?\s*\]/gi;
+
+// vmixtext[input name/number, [selected name/index], [textoverride]]
+// puts the current slide body text (or the textoverride) into the specified text box
+// of the specified input, selected name/index defaults to 0
+const vmix_text_pattern = /vmixtext\[(.+?)\s*(?:,\s*(.+?))?\s*(?:,\s*(.+?))?\s*\]/gi;
+
+// For advanced vMix control, put vMix API commands in JSON text between vmix tags
+// [vmix]
+// {
+// 	"Function": "Slide",
+// 	"Duration": 3000
+// }
+// [/vmix]
 const vmix_advanced = /\[vmix\](.+?)\[\/vmix\]/gis;
 
+// NOTE: vMix API Documentation is here: https://www.vmix.com/help21/index.htm?DeveloperAPI.html
+// NOTE: multiple vmix triggers of each type can be handled per slide.
+
+// MIDI:
+// note[note,[velocity],[channel]]
+// channel defaults to 0
+// velocity defaults to 127
+const midi_note_pattern = /note\[(\d+)\s*(?:,\s*(\d+?))?\s*(?:,\s*(\d+))?\s*\]/gi;
+
+// pc[program number, [channel]]
+// program change, channel defaults to 0
+const midi_pc_pattern = /pc\[(\d+)\s*(?:,\s*(\d+?))?\s*\]/gi;
+
+// cc[controller (0-127), value, [channel]]
+// channel defaults to 0
+// both are required
+// note that controllers 120-127 are reserved for special channel mode messages
+// 120,0 = all sound off
+// 121,0 = reset controllers
+// 122,0 = local control off
+// 122,127 = local control on
+// 123,0 = all notes off
+// 124,0 = omni mode off
+// 125,0 = omni mode on
+// 126,c = mono mode where c is number of channels
+// 127,0 = poly mode
+const midi_cc_pattern = /cc\[(\d+)\s*(?:,\s*(\d+?))?\s*(?:,\s*(\d+))?\s*\]/gi;
+
+// mtc[initial timecode string, fps]
+// timecode string should be of the format HH:MM:SS:FF where FF is the number of the frame, zero indexed
+// fps is frames per second... defaults to 24
+// mtc[] will turn off the timecode generator
+const midi_mtc_pattern = /mtc\[(?:(.+?))?\s*(?:,\s*(\d+))?\s*\]/gi;
+
+let allow_triggers = true;
 const pro6_triggers = [
 	{
 		name: "Testing Timer Trigger",
@@ -101,6 +141,49 @@ const pro6_triggers = [
 		callback: (d) => {
 			Log(`COUNTDOWN TIMER TRIGGERED:`);
 			Log(d);
+		},
+	},
+	{
+		name: "SlideNotes MIDI Checker",
+		type: "slides",
+		enabled: true,
+		test: () => true,
+		callback: (slides) => {
+			if (!midi.connected) {
+				console.log("MIDI triggered, but no MIDI port is connected");
+			}
+
+			// check current slide notes for midi note data
+			for (let match of findall(midi_note_pattern, slides.current.notes)) {
+				let note = match[1];
+				let vel = match[2] || 127;
+				let chan = match[3] || 0;
+				// the "hit" function will turn a note on and then off again after 100ms
+				midi.hit(note, vel, chan);
+			}
+
+			// check current slide notes for midi program data
+			for (let match of findall(midi_pc_pattern, slides.current.notes)) {
+				let prog = match[1];
+				let chan = match[2] || 0;
+				midi.program(prog, chan);
+			}
+
+			// check current slide notes for midi control change data
+			for (let match of findall(midi_cc_pattern, slides.current.notes)) {
+				let controller = match[1];
+				let val = match[2] || 127;
+				let chan = match[3] || 0;
+				midi.control(controller, val, chan);
+			}
+
+			// check current slide notes for midi control change data
+			for (let match of findall(midi_mtc_pattern, slides.current.notes)) {
+				let timecode = match[1];
+				let fps = match[2] || 24;
+				if (timecode) midi.mtcStart(timecode, fps);
+				else midi.mtcStop();
+			}
 		},
 	},
 	{
@@ -126,9 +209,6 @@ const pro6_triggers = [
 		test: () => true,
 		callback: (slides) => {
 			let match;
-			Log("======== SLIDE NOTES ==============");
-			Log(slides.current.notes);
-			Log("===================================");
 
 			// check current notes for live event data
 			match = slides.current.notes.match(live_event_pattern);
@@ -152,7 +232,13 @@ const pro6_triggers = [
 		enabled: true,
 		test: () => true,
 		callback: (slides) => {
-			// handle lyrics always
+			// check current notes for novmix tag
+			let match;
+			match = slides.current.notes.match(vmix_ignore_pattern);
+			if (match) {
+				Log("[novmix] found... ignoring vmix commands");
+				return;
+			}
 			vmix.setInputText(config.VMIX_LYRICS_INPUT, slides.current.text);
 		},
 	},
@@ -162,12 +248,8 @@ const pro6_triggers = [
 		enabled: true,
 		test: () => true,
 		callback: (slides) => {
+			// check current notes for novmix tag
 			let match;
-			Log("======== SLIDE NOTES ==============");
-			Log(slides.current.notes);
-			Log("===================================");
-
-			// check current notes for auto vmix data
 			match = slides.current.notes.match(vmix_ignore_pattern);
 			if (match) {
 				Log("[novmix] found... ignoring vmix commands");
@@ -244,6 +326,9 @@ const pro6_triggers = [
 	},
 ];
 
+//
+// NO NEED TO EDIT BELOW HERE
+//
 //  ---- UI SERVER CODE ---
 const fs = require("fs");
 const http = require("http");
@@ -313,6 +398,11 @@ wss.on("connection", function connection(ws) {
 				}
 				broadcast("status", getStatus());
 				break;
+			case "update_midi":
+				console.log("selecting new MIDI port");
+				midi.closePort();
+				midi.openPort(data);
+				break;
 			case "toggle_allow_triggers":
 				allow_triggers = data;
 				broadcast("status", getStatus());
@@ -350,6 +440,9 @@ pl = new Pro6Listener(config.PRO6_HOST, config.PRO6_SD_PASSWORD, {
 		// console.log("SLIDES: ");
 		// console.log(pro6.slides);
 
+		console.log("--------- PRO6 UPDATE -------------");
+		console.log(data);
+
 		// broadcast("pro6update", data);
 		broadcast("status", getStatus());
 		// process triggers
@@ -364,17 +457,23 @@ pl = new Pro6Listener(config.PRO6_HOST, config.PRO6_SD_PASSWORD, {
 			}
 			if (!used) {
 				console.log("No triggers configured, for this data:");
-				console.log(data);
+				// console.log(data);
 			}
 		} else {
 			console.log("ProPresenter Update, but triggers are disabled.");
-			console.log(data);
+			// console.log(data);
 		}
+		console.log("-----------------------------------");
 	},
 });
 
 // and start the ui server
-console.log(`Starting ProPresenter Watcher UI Server on port ${config.UI_SERVER_PORT}`);
+console.log(`
+|
+| ProPresenter Watcher
+| UI available at http://localhost:${config.UI_SERVER_PORT}
+|
+`);
 server.listen(config.UI_SERVER_PORT);
 
 // OTHER FUNCTIONS
@@ -386,6 +485,7 @@ function getStatus() {
 		triggers: pro6_triggers,
 		pro6_status: pl.status(),
 		vmix_status: vmix.lastmessage,
+		midi_status: midi.status(),
 	};
 }
 function broadcast(message, data) {
@@ -462,6 +562,18 @@ function httpHandler(req, res) {
 			}
 		});
 	}
+}
+
+function findall(regex, subject) {
+	let matches = [];
+	let match = true;
+	while (match) {
+		match = regex.exec(subject);
+		if (match) {
+			matches.push(match);
+		}
+	}
+	return matches;
 }
 
 function timestamp() {

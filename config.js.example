@@ -8,6 +8,8 @@ const config = {
 	VMIX_LYRICS_INPUT: 1,
 	LOGGER_URL: "https://example.org/log",
 	LOGGER_KEY: "apikey",
+	USEWEBLOG: false,
+	MIDI_PORT: 0,
 };
 
 module.exports = config;

@@ -60,4 +60,4 @@ class LiveEventController {
 	}
 }
 
-module.exports = LiveEventController;
+module.exports.LiveEventController = LiveEventController;

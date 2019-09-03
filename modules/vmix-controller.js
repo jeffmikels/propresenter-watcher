@@ -76,4 +76,4 @@ class VmixController {
 	}
 }
 
-module.exports = VmixController;
+module.exports.VmixController = VmixController;

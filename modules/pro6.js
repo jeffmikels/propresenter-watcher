@@ -1,5 +1,5 @@
 // WS module doesn't work in browsers
-const WebSocket = require("isomorphic-ws");
+const WebSocket = require("ws");
 
 const PRO6_SD_PROTOCOL = 610;
 const PRO6_CONTROL_PROTOCOL = 600;
@@ -22,6 +22,14 @@ function timestring2secs(timestring) {
 	return seconds;
 }
 
+class Slide {
+	constructor() {
+		this.uid = "";
+		this.text = "";
+		this.notes = "";
+	}
+}
+
 // listens to ProPresenter
 // as a stage display client
 class Pro6Listener {
@@ -31,17 +39,11 @@ class Pro6Listener {
 		this.password = password;
 		this.active = false;
 
-		this.system_time = "";
+		this.system_time = { text: "", seconds: 0 };
 		this.timers = {};
 		this.slides = {
-			current: {
-				text: "",
-				notes: "",
-			},
-			next: {
-				text: "",
-				notes: "",
-			},
+			current: new Slide(),
+			next: new Slide(),
 		};
 
 		this.onupdate = options.onupdate;
@@ -150,8 +152,8 @@ class Pro6Listener {
 				// ns: next slide
 				// nsn: next slide notes
 
-				this.slides.current = {};
-				this.slides.next = {};
+				this.slides.current = new Slide();
+				this.slides.next = new Slide();
 				for (let blob of data.ary) {
 					switch (blob.acn) {
 						case "cs":
@@ -179,12 +181,12 @@ class Pro6Listener {
 
 // incomplete at the moment
 class Pro6Controller {
-	constructor(host, port, password, options) {
+	constructor(host, password, options) {
 		this.connected = false;
 		this.controlling = false;
 		this.password = password;
 
-		this.ws = new WebSocket(`ws://${host}:${port}/remote`);
+		this.ws = new WebSocket(`ws://${host}/remote`);
 
 		this.ws.on("message", (data) => {
 			this.handleData(JSON.parse(data));
@@ -192,12 +194,31 @@ class Pro6Controller {
 		this.ws.on("open", () => {
 			this.authenticate();
 		});
+		this.ws.on("close", () => {
+			this.connected = false;
+			this.controlling = false;
+		});
 
 		this.onupdate = options.onupdate;
-		this.currentPresentationPath = null;
+		this.callbacks = {};
+
+		// handle pro6 status
+		this.status = {
+			currentPresentation: null,
+			currentSlideIndex: 0,
+			library: [],
+			playlists: [],
+		};
 	}
 
-	send(Obj) {
+	send(Obj, callback = null) {
+		// register callback if there is one.
+		if (typeof callback == "function") {
+			// fix api bug
+			let responseAction = Obj.action;
+			if (Obj.action == "presentationRequest") responseAction = "presentationCurrent";
+			this.callbacks[responseAction] = callback;
+		}
 		this.ws.send(JSON.stringify(Obj));
 	}
 
@@ -210,48 +231,131 @@ class Pro6Controller {
 		this.send(PRO6_REMOTE_AUTH);
 	}
 
+	flattenPlaylist(playlistObj) {
+		let flattened = [];
+		switch (playlistObj.playlistType) {
+			case "playlistTypePlaylist":
+				flattened = playlistObj.playlist;
+				break;
+			case "playlistTypeGroup":
+				for (let playlist of playlistObj.playlist) {
+					flattened.push(...this.flattenPlaylist(playlist));
+				}
+				break;
+		}
+		return flattened;
+	}
+
+	loadStatus() {
+		this.getLibrary();
+		this.getPlaylists();
+		this.getPresentation();
+		this.getCurrentSlideIndex();
+	}
+
 	handleData(data) {
 		console.log(data);
-		let newdata = {};
-		if (this.onupdate) this.onupdate(newdata, this);
-	}
 
-	getLibrary() {
-		this.send({ action: "libraryRequest" });
-	}
+		// process data for this class instance
+		switch (data.action) {
+			case "authenticate":
+				if (data.authenticated == 1) this.connected = true;
+				if (data.controller == 1) this.controlling = true;
 
-	getPlaylists() {
-		this.send({ action: "playlistRequestAll" });
-	}
+				if (this.connected) this.loadStatus();
+				break;
+			case "libraryRequest":
+				this.status.library = data.library;
+				break;
+			case "playlistRequestAll":
+				this.status.playlists = this.flattenPlaylist(data.playlistAll);
+				break;
+			case "presentationCurrent":
+				this.status.currentPresentation = data.presentation;
+				break;
+			case "presentationSlideIndex":
+				this.status.currentSlideIndex = +data.slideIndex;
+				break;
+			case "presentationTriggerIndex":
+				this.status.currentSlideIndex = +data.slideIndex;
+				if (this.status.currentPresentation == null) {
+					this.getPresentation();
+				}
+		}
 
-	getPresentation(path = null, quality = 10) {
-		if (path == null) {
-			this.send({
-				action: "presentationCurrent",
-				presentationSlideQuality: quality,
-			});
-		} else {
-			this.send({
-				action: "presentationRequest",
-				presentationPath: path,
-				presentationSlideQuality: quality,
-			});
+		// handle update stream
+		if (this.onupdate) this.onupdate(data, this);
+
+		// handle callbacks
+		if (typeof this.callbacks[data.action] == "function") {
+			this.callbacks[data.action](data);
+			delete this.callbacks[data.action];
 		}
 	}
 
-	getCurrentSlideIndex() {
-		this.send({ action: "presentationSlideIndex" });
+	getLibrary(callback = null) {
+		this.send({ action: "libraryRequest" }, callback);
 	}
 
-	triggerSlide(index = 0, path = null) {
-		if (path != null) this.currentPresentationPath = path;
-		if (this.currentPresentationPath == null) return false;
-		this.send({
-			action: "presentationTriggerIndex",
-			slideIndex: index,
-			presentationPath: this.currentPresentationPath,
-		});
+	getPlaylists(callback = null) {
+		this.send({ action: "playlistRequestAll" }, callback);
+	}
+
+	getPresentation(path = null, quality = 10, callback = null) {
+		if (path == null) {
+			this.send(
+				{
+					action: "presentationCurrent",
+					presentationSlideQuality: quality,
+				},
+				callback
+			);
+		} else {
+			this.send(
+				{
+					action: "presentationRequest",
+					presentationPath: path,
+					presentationSlideQuality: quality,
+				},
+				callback
+			);
+		}
+	}
+
+	getCurrentSlideIndex(callback = null) {
+		this.send({ action: "presentationSlideIndex" }, callback);
+	}
+
+	triggerSlide(index = 0, path = null, callback = null) {
+		if (!this.controlling) return false;
+		if (path == null && this.status.currentPresentation == null) return false;
+		if (path == null) path = this.status.currentPresentation.presentationCurrentLocation;
+		this.send(
+			{
+				action: "presentationTriggerIndex",
+				slideIndex: index,
+				presentationPath: path,
+			},
+			callback
+		);
+		return true;
+	}
+
+	next(callback = null) {
+		if (this.status.currentPresentation == null) return false;
+		if (this.status.currentSlideIndex == null) return false;
+		let nextIndex = this.status.currentSlideIndex + 1;
+		return this.triggerSlide(nextIndex, null, callback);
+	}
+
+	prev(callback = null) {
+		if (this.status.currentPresentation == null) return false;
+		if (this.status.currentSlideIndex == null) return false;
+		let nextIndex = this.status.currentSlideIndex - 1;
+		if (nextIndex < 0) nextIndex = 0;
+		return this.triggerSlide(nextIndex, null, callback);
 	}
 }
 
 module.exports.Pro6Listener = Pro6Listener;
+module.exports.Pro6Controller = Pro6Controller;

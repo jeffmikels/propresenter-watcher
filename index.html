@@ -29,14 +29,14 @@
 			.main {
 				box-sizing: border-box;
 				position: relative;
-				width: 500px;
+				width: 580px;
 				float: left;
 			}
 
 			.sidebar {
 				box-sizing: border-box;
 				position: relative;
-				width: 300px;
+				width: 290px;
 				float: right;
 			}
 
@@ -142,11 +142,15 @@
 
 	<body>
 		<div id="app" :class="state">
-			<clock>{{ pro6_status.system_time.text }}</clock>
+			<clock v-if="pro6_status.system_time">{{ pro6_status.system_time.text }}</clock>
 			<status v-if="connected">
 				PP:
 				<span :class="{active: pro6_status.active, inactive: !pro6_status.active}">
 					{{ pro6_status.active ? "ACTIVE" : "INACTIVE" }}
+				</span>
+				| MIDI:
+				<span :class="{active: midi_status.connected, inactive: !midi_status.connected}">
+					{{ midi_status.connected ? midi_status.port.name : "NOT CONNECTED" }}
 				</span>
 				| VMIX: <span class="vmix">{{ vmix_status }}</span>
 			</status>
@@ -200,6 +204,18 @@
 						<label class="text">vMix Input for Lyrics </label>
 						<input @change="update_config" v-model="config.VMIX_LYRICS_INPUT" />
 					</li>
+					<li>
+						<label class="text">MIDI Output Port </label>
+						<select @change="update_midi" v-model="selected_port">
+							<option>-- SELECT MIDI PORT --</option>
+							<option
+								v-for="port in midi_status.ports"
+								:selected="port.id == selected_port"
+								:value="port.id"
+								>{{ port.name }}</option
+							>
+						</select>
+					</li>
 				</ul>
 				<h3>Triggers</h3>
 				<ul>
@@ -243,6 +259,8 @@
 					triggers: {},
 					pro6_status: {},
 					vmix_status: "",
+					midi_status: {},
+					selected_port: null,
 					allow_triggers: true,
 					status: "",
 					connected: false,
@@ -270,6 +288,9 @@
 					},
 				},
 				methods: {
+					update_midi() {
+						ws.bettersend("update_midi", this.selected_port);
+					},
 					update_config() {
 						ws.bettersend("config", this.config);
 					},
@@ -311,6 +332,8 @@
 									this.allow_triggers = data.allow_triggers;
 									this.pro6_status = data.pro6_status;
 									this.vmix_status = data.vmix_status;
+									this.midi_status = data.midi_status;
+									if (this.midi_status.port != null) this.selected_port = this.midi_status.port.id;
 									break;
 								case "vmix":
 									this.vmix_status = data;
