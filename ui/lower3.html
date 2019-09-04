@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="x-ua-compatible" content="ie=edge" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, shrink-to-fit=no"
+    />
+    <title>ProPresenter Watcher Lower Third</title>
+
+    <style media="screen">
+      html,
+      body {
+        margin: 0;
+        width: 100%;
+        height: auto;
+        overflow: hidden;
+      }
+      body {
+        background: black;
+        color: ivory;
+        font-family: Muli, sans-serif;
+        box-sizing: border-box;
+      }
+      #lower3 {
+        position: relative;
+        height: 333px;
+        box-sizing: border-box;
+        padding: 20px 40px;
+        overflow: hidden;
+      }
+      #lower3 img {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: auto;
+      }
+      #lower3 #text {
+        font-family: Muli;
+        font-weight: 800;
+        font-size: 60pt;
+        text-shadow: 2px 2px 9px rgba(0, 0, 0, 1);
+        letter-spacing: -3px;
+        position: relative;
+        top: 50%;
+        transform: translateY(-50%);
+        line-height: 1;
+        white-space: pre-line;
+      }
+    </style>
+    <meta charset="UTF-8" />
+  </head>
+
+  <body>
+    <div id="app" :class="">
+      <div id="lower3">
+        <img :src="image" alt="" />
+        <div id="text" v-html="html"></div>
+      </div>
+    </div>
+
+    <script type="text/javascript" src="lib/vue.js"></script>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/vue"></script> -->
+
+    <!-- main code goes here -->
+    <script type="text/javascript">
+      let ws;
+      let reconnectTime = 3000;
+      let reconnectTimer = 0;
+      let app = new Vue({
+        el: "#app",
+        data: {
+          text: "",
+          html: "",
+          image: ""
+        },
+        computed: {},
+        methods: {
+          getLower() {
+            ws.bettersend("lower3");
+          },
+
+          connect() {
+            this.connecting = true;
+            console.log("attempting to reconnect to watcher service");
+
+            // connect the websocket
+            ws = new WebSocket(`ws://${document.location.host}`);
+            ws.bettersend = function(message = "", data = {}) {
+              ws.send(JSON.stringify({ message, data }));
+            };
+
+            ws.onmessage = event => {
+              let { message, data } = JSON.parse(event.data);
+              console.log(`"${message}" message received`);
+              switch (message) {
+                case "lower3":
+                  this.html = data.html;
+                  this.text = data.text;
+                  this.image = data.image;
+                  break;
+                case "status":
+                  this.html = data.lower3.html;
+                  this.text = data.lower3.text;
+                  this.image = data.lower3.image;
+                  break;
+              }
+              console.log(message);
+              console.log(data);
+            };
+            ws.onclose = event => {
+              this.connected = false;
+              console.log(
+                `disconnected from watcher service... reconnecting in ${reconnectTime /
+                  1000} seconds`
+              );
+              reconnectTimer = setTimeout(() => {
+                this.connect();
+              }, reconnectTime);
+            };
+            ws.onopen = event => {
+              this.connected = true;
+              this.connecting = false;
+              console.log("Connected to watcher service");
+              this.getLower();
+            };
+          }
+        },
+        updated: function() {
+          // scale text to fit
+          let el = document.getElementById("text");
+          el.style.fontSize = "80px";
+
+          let l3 = document.getElementById("lower3");
+          let padding = 20;
+          let targetHeight = l3.offsetHeight - padding * 2;
+          var i = 80;
+          while (el.offsetHeight > targetHeight) {
+            i--;
+            // console.log(i);
+            el.style.fontSize = `${i}px`;
+          }
+        },
+        mounted: function() {
+          this.connect();
+        }
+      });
+    </script>
+  </body>
+</html>

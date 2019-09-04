@@ -10,6 +10,7 @@ const config = {
 	LOGGER_KEY: "apikey",
 	USEWEBLOG: false,
 	MIDI_PORT: 0,
+	LOWER3_IMAGE: '/lower3.png',
 };
 
 module.exports = config;
