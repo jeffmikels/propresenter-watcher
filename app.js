@@ -93,6 +93,9 @@ const vmix_fade_pattern = /vmixfade\[(.+?)\s*(?:,\s*(\d+))?\s*\]/gi;
 // of the specified input, selected name/index defaults to 0
 const vmix_text_pattern = /vmixtext\[(.+?)\s*(?:,\s*(.+?))?\s*(?:,\s*(.+?))?\s*\]/gi;
 
+// manually set the vmix lower3 html.
+const vmix_lower3_pattern = /\[lower3\](.+?)\[\/lower3\]/gis;
+
 // For advanced vMix control, put vMix API commands in JSON text between vmix tags
 // [vmix]
 // {
@@ -321,6 +324,13 @@ const pro6_triggers = [
           vmix_lower3.text = realtext;
           vmix_lower3.html = realtext;
         }
+      }
+
+      match = vmix_lower3_pattern.exec(slides.current.notes);
+      if (match) {
+        Log(`vmix lower3 override: ${match[0]}`);
+        vmix_lower3.text = match[1].trim();
+        vmix_lower3.html = markdown(match[1].trim());
       }
 
       // allow for advanced vmix commands
@@ -587,6 +597,11 @@ function httpHandler(req, res) {
       }
     });
   }
+}
+
+function markdown(s) {
+  s = s.replace(/_(.*?)_/g, `<span class="blank">$1</span>`);
+  return s;
 }
 
 function findall(regex, subject) {
