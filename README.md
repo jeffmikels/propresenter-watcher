@@ -30,7 +30,15 @@ npm install
 
 During installation, a number of node modules will be downloaded.
 
-However, the MIDI component of this system relies on the node-midi module which requires compiling rtmidi, and therefore, a compiler must be installed.
+However, the MIDI component of this system relies on the `node-midi` module which requires compiling `rtmidi`, and therefore, a compiler must be installed.
+
+The easiest way to do that is to follow the `node-gyp` instructions for your operating system here [https://github.com/nodejs/node-gyp].
+
+If you ever need to rebuild the midi module, you can use this command:
+
+```
+npm rebuild
+```
 
 For more information, visit the node-midi documentation here [https://github.com/justinlatimer/node-midi]
 
@@ -46,10 +54,20 @@ Read the comments in the `app.js` file so you can understand the way the slide n
 
 ## Using Live
 
+### Run the app
+
 To run the app, open up a terminal / command window in the folder where this code is stored.
 
 ```
 node app.js
 ```
 
+### Open the UI
+
 Then, open a browser to `http://localhost:7000` (or whatever port you specified in the config.js file).
+
+### Use the vmix lower3 webpage
+
+If you are integrating with vmix, obs, or some other system, you can open a specially designed "lower third" webpage that will be updated whenever ProPresenter text changes.
+
+`http://localhost:7000/lower3.html`

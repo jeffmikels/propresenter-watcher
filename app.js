@@ -18,12 +18,12 @@ const { Midi } = require("./modules/midi.js");
 // web logger
 let Log = console.log;
 if (config.USEWEBLOG) {
-  const WebLogger = require("./modules/web-logger.js");
-  const weblog = new WebLogger(config.LOGGER_URL, config.LOGGER_KEY);
-  Log = function(s, allowWebLog = true) {
-    if (allowWebLog) weblog.log(s);
-    console.log(s);
-  };
+	const WebLogger = require("./modules/web-logger.js");
+	const weblog = new WebLogger(config.LOGGER_URL, config.LOGGER_KEY);
+	Log = function(s, allowWebLog = true) {
+		if (allowWebLog) weblog.log(s);
+		console.log(s);
+	};
 }
 
 // LIVE EVENT API HANDLER
@@ -32,9 +32,9 @@ let lec = new LiveEventController(config.LCC_LIVE_URL, 0);
 // VMIX API HANDLER
 let vmix = new VmixController("http://" + config.VMIX_HOST);
 let vmix_lower3 = {
-  text: "",
-  html: "",
-  image: config.LOWER3_IMAGE
+	text: "",
+	html: "",
+	image: config.LOWER3_IMAGE,
 };
 
 // MIDI HANDLER
@@ -94,7 +94,7 @@ const vmix_fade_pattern = /vmixfade\[(.+?)\s*(?:,\s*(\d+))?\s*\]/gi;
 const vmix_text_pattern = /vmixtext\[(.+?)\s*(?:,\s*(.+?))?\s*(?:,\s*(.+?))?\s*\]/gi;
 
 // manually set the vmix lower3 html.
-const vmix_lower3_pattern = /\[lower3\](.+?)\[\/lower3\]/gis;
+const vmix_lower3_pattern = /\[lower3\](.*?)\[\/lower3\]/gis;
 
 // For advanced vMix control, put vMix API commands in JSON text between vmix tags
 // [vmix]
@@ -103,7 +103,7 @@ const vmix_lower3_pattern = /\[lower3\](.+?)\[\/lower3\]/gis;
 // 	"Duration": 3000
 // }
 // [/vmix]
-const vmix_advanced = /\[vmix\](.+?)\[\/vmix\]/gis;
+const vmix_advanced = /\[vmix\](.*?)\[\/vmix\]/gis;
 
 // NOTE: vMix API Documentation is here: https://www.vmix.com/help21/index.htm?DeveloperAPI.html
 // NOTE: multiple vmix triggers of each type can be handled per slide.
@@ -141,210 +141,194 @@ const midi_mtc_pattern = /mtc\[(?:(.+?))?\s*(?:,\s*(\d+))?\s*\]/gi;
 
 let allow_triggers = true;
 const pro6_triggers = [
-  {
-    name: "Testing Timer Trigger",
-    type: "timer",
-    enabled: true,
-    test: d => d.uid == "47E8B48C-0D61-4EFC-9517-BF9FB894C8E2",
-    callback: d => {
-      Log(`COUNTDOWN TIMER TRIGGERED:`);
-      Log(d);
-    }
-  },
-  {
-    name: "SlideNotes MIDI Checker",
-    type: "slides",
-    enabled: true,
-    test: () => true,
-    callback: slides => {
-      if (!midi.connected) {
-        console.log("MIDI triggered, but no MIDI port is connected");
-      }
+	{
+		name: "Testing Timer Trigger",
+		type: "timer",
+		enabled: true,
+		test: (d) => d.uid == "47E8B48C-0D61-4EFC-9517-BF9FB894C8E2",
+		callback: (d) => {
+			Log(`COUNTDOWN TIMER TRIGGERED:`);
+			Log(d);
+		},
+	},
+	{
+		name: "SlideNotes MIDI Checker",
+		type: "slides",
+		enabled: true,
+		test: () => true,
+		callback: (slides) => {
+			if (!midi.connected) {
+				console.log("MIDI triggered, but no MIDI port is connected");
+			}
 
-      // check current slide notes for midi note data
-      for (let match of findall(midi_note_pattern, slides.current.notes)) {
-        let note = match[1];
-        let vel = match[2] || 127;
-        let chan = match[3] || 0;
-        // the "hit" function will turn a note on and then off again after 100ms
-        midi.hit(note, vel, chan);
-      }
+			// check current slide notes for midi note data
+			for (let match of findall(midi_note_pattern, slides.current.notes)) {
+				let note = match[1];
+				let vel = match[2] || 127;
+				let chan = match[3] || 0;
+				// the "hit" function will turn a note on and then off again after 100ms
+				midi.hit(note, vel, chan);
+			}
 
-      // check current slide notes for midi program data
-      for (let match of findall(midi_pc_pattern, slides.current.notes)) {
-        let prog = match[1];
-        let chan = match[2] || 0;
-        midi.program(prog, chan);
-      }
+			// check current slide notes for midi program data
+			for (let match of findall(midi_pc_pattern, slides.current.notes)) {
+				let prog = match[1];
+				let chan = match[2] || 0;
+				midi.program(prog, chan);
+			}
 
-      // check current slide notes for midi control change data
-      for (let match of findall(midi_cc_pattern, slides.current.notes)) {
-        let controller = match[1];
-        let val = match[2] || 127;
-        let chan = match[3] || 0;
-        midi.control(controller, val, chan);
-      }
+			// check current slide notes for midi control change data
+			for (let match of findall(midi_cc_pattern, slides.current.notes)) {
+				let controller = match[1];
+				let val = match[2] || 127;
+				let chan = match[3] || 0;
+				midi.control(controller, val, chan);
+			}
 
-      // check current slide notes for midi control change data
-      for (let match of findall(midi_mtc_pattern, slides.current.notes)) {
-        let timecode = match[1];
-        let fps = match[2] || 24;
-        if (timecode) midi.mtcStart(timecode, fps);
-        else midi.mtcStop();
-      }
-    }
-  },
-  {
-    name: "SlideNotes Sermon Start Checker",
-    type: "slides",
-    enabled: true,
-    test: () => true,
-    callback: slides => {
-      let match;
+			// check current slide notes for midi control change data
+			for (let match of findall(midi_mtc_pattern, slides.current.notes)) {
+				let timecode = match[1];
+				let fps = match[2] || 24;
+				if (timecode) midi.mtcStart(timecode, fps);
+				else midi.mtcStop();
+			}
+		},
+	},
+	{
+		name: "SlideNotes Sermon Start Checker",
+		type: "slides",
+		enabled: true,
+		test: () => true,
+		callback: (slides) => {
+			let match;
 
-      // check current notes for live event data
-      match = slides.current.notes.match(sermon_start_pattern);
-      if (match) {
-        let now = new Date();
-        Log("SERMON STARTING: " + timestamp());
-      }
-    }
-  },
-  {
-    name: "SlideNotes Live Event Checker",
-    type: "slides",
-    enabled: true,
-    test: () => true,
-    callback: slides => {
-      let match;
+			// check current notes for live event data
+			match = slides.current.notes.match(sermon_start_pattern);
+			if (match) {
+				let now = new Date();
+				Log("SERMON STARTING: " + timestamp());
+			}
+		},
+	},
+	{
+		name: "SlideNotes Live Event Checker",
+		type: "slides",
+		enabled: true,
+		test: () => true,
+		callback: (slides) => {
+			let match;
 
-      // check current notes for live event data
-      match = slides.current.notes.match(live_event_pattern);
-      if (match) {
-        lec.control(match[1]);
-        let logstring = "LIVE EVENT CONTROL: event " + match[1];
-        Log(logstring);
-      }
+			// check current notes for live event data
+			match = slides.current.notes.match(live_event_pattern);
+			if (match) {
+				lec.control(match[1]);
+				let logstring = "LIVE EVENT CONTROL: event " + match[1];
+				Log(logstring);
+			}
 
-      match = slides.current.notes.match(live_progress_pattern);
-      if (match) {
-        lec.update(match[1]);
-        let logstring = `LIVE EVENT UPDATE: event ${lec.eid} progress ${
-          match[1]
-        }`;
-        Log(logstring);
-      }
-    }
-  },
-  {
-    name: "vMix Lyrics Handler",
-    type: "slides",
-    enabled: true,
-    test: () => true,
-    callback: slides => {
-      // check current notes for novmix tag
-      let match;
-      match = slides.current.notes.match(vmix_ignore_pattern);
-      if (match) {
-        Log("[novmix] found... ignoring vmix commands");
-        return;
-      }
-      vmix.setInputText(config.VMIX_LYRICS_INPUT, slides.current.text);
-    }
-  },
-  {
-    name: "vMix Notes Checker",
-    type: "slides",
-    enabled: true,
-    test: () => true,
-    callback: slides => {
-      // check current notes for novmix tag
-      let match;
-      match = slides.current.notes.match(vmix_ignore_pattern);
-      if (match) {
-        Log("[novmix] found... ignoring vmix commands");
-        return;
-      }
+			match = slides.current.notes.match(live_progress_pattern);
+			if (match) {
+				lec.update(match[1]);
+				let logstring = `LIVE EVENT UPDATE: event ${lec.eid} progress ${match[1]}`;
+				Log(logstring);
+			}
+		},
+	},
+	{
+		name: "vMix Lyrics Handler",
+		type: "slides",
+		enabled: true,
+		test: () => true,
+		callback: (slides) => {
+			// check current notes for novmix tag
+			let match = slides.current.notes.match(vmix_ignore_pattern);
+			if (match) {
+				Log("[novmix] found... ignoring vmix commands");
+				return;
+			}
+			vmix.setInputText(config.VMIX_LYRICS_INPUT, slides.current.text);
+		},
+	},
+	{
+		name: "vMix Notes Checker",
+		type: "slides",
+		enabled: true,
+		test: () => true,
+		callback: (slides) => {
+			// check current notes for novmix tag
+			let match;
+			let notes = slides.current.notes;
 
-      // vmix triggers are allowed
-      // fade trigger
-      match = true;
-      while (match) {
-        match = vmix_fade_pattern.exec(slides.current.notes);
-        if (match) {
-          Log(`vmix match: ${match[0]}`);
-          let duration = 1000;
-          if (match[2]) duration = +match[2];
-          vmix.fadeToInput(match[1], duration);
-        }
-      }
+			match = notes.match(vmix_ignore_pattern);
+			if (match) {
+				Log("[novmix] found... ignoring vmix commands");
+				return;
+			}
 
-      // cut trigger
-      match = true;
-      while (match) {
-        match = vmix_cut_pattern.exec(slides.current.notes);
-        if (match) {
-          Log(`vmix match: ${match[0]}`);
-          vmix.cutToInput(match[1]);
-        }
-      }
+			// vmix triggers are allowed
+			// fade trigger
+			for (let match of findall(vmix_fade_pattern, notes)) {
+				Log(`vmix match: ${match[0]}`);
+				let duration = 1000;
+				if (match[2]) duration = +match[2];
+				vmix.fadeToInput(match[1], duration);
+			}
 
-      // generic transition trigger
-      match = true;
-      while (match) {
-        match = vmix_trans_pattern.exec(slides.current.notes);
-        if (match) {
-          Log(`vmix match: ${match[0]}`);
-          let type = match[1].toLowerCase();
-          type = type.charAt(0).toUpperCase() + type.slice(1);
-          let input = null;
-          if (match[2]) input = match[2];
-          let duration = 1000;
-          if (match[3]) duration = +match[3];
-          let options = {
-            Function: type,
-            Duration: duration
-          };
-          if (input) options.Input = input;
-          vmix.api(options);
-        }
-      }
+			// cut trigger
+			for (let match of findall(vmix_cut_pattern, notes)) {
+				Log(`vmix match: ${match[0]}`);
+				vmix.cutToInput(match[1]);
+			}
 
-      // text trigger
-      match = true;
-      while (match) {
-        match = vmix_text_pattern.exec(slides.current.notes);
-        if (match) {
-          Log(`vmix match: ${match[0]}`);
-          let selected = 0;
-          if (match[2]) selected = match[2];
-          let realtext = slides.current.text;
-          if (match[3]) realtext = match[3];
-          vmix.setInputText(match[1], realtext, selected);
-          vmix_lower3.text = realtext;
-          vmix_lower3.html = realtext;
-        }
-      }
+			// generic transition trigger
+			for (let match of findall(vmix_trans_pattern, notes)) {
+				Log(`vmix match: ${match[0]}`);
+				let type = match[1].toLowerCase();
+				type = type.charAt(0).toUpperCase() + type.slice(1);
+				let input = null;
+				if (match[2]) input = match[2];
+				let duration = 1000;
+				if (match[3]) duration = +match[3];
+				let options = {
+					Function: type,
+					Duration: duration,
+				};
+				if (input) options.Input = input;
+				vmix.api(options);
+			}
 
-      match = vmix_lower3_pattern.exec(slides.current.notes);
-      if (match) {
-        Log(`vmix lower3 override: ${match[0]}`);
-        vmix_lower3.text = match[1].trim();
-        vmix_lower3.html = markdown(match[1].trim());
-      }
+			// text trigger
+			for (let match of findall(vmix_text_pattern, notes)) {
+				Log(`vmix match: ${match[0]}`);
+				let selected = 0;
+				if (match[2]) selected = match[2];
+				let realtext = slides.current.text;
 
-      // allow for advanced vmix commands
-      match = true;
-      while (match) {
-        match = vmix_advanced.exec(slides.current.notes);
-        if (match && match[1]) {
-          Log(`vmix match: ${match[0]}`);
-          let options = JSON.parse(match[1]);
-          if (options) vmix.api(options);
-        }
-      }
-    }
-  }
+				// allow third field of this tag to override the text
+				if (match[3]) realtext = match[3];
+				vmix.setInputText(match[1], realtext, selected);
+				vmix_lower3.text = realtext;
+				vmix_lower3.html = realtext;
+			}
+
+			for (let match of findall(vmix_lower3_pattern, notes)) {
+				Log(`vmix lower3 override: ${match[0]}`);
+				vmix_lower3.text = match[1].trim();
+				vmix_lower3.html = markdown(match[1].trim());
+			}
+
+			// allow for advanced vmix commands
+			for (let match of findall(vmix_advanced, notes)) {
+				Log(`vmix advanced match: ${match[0]}`);
+				try {
+					let options = JSON.parse(match[1]);
+					if (options && options.length > 0) vmix.api(options);
+				} catch (e) {
+					Log("failed to parse json");
+				}
+			}
+		},
+	},
 ];
 
 //
@@ -367,73 +351,73 @@ const server = http.createServer(httpHandler);
 
 // handles realtime communication with frontend
 const wss = new WebSocket.Server({
-  server: server,
-  clientTracking: true
+	server: server,
+	clientTracking: true,
 });
 
 wss.on("connection", function connection(ws) {
-  ws.isAlive = true;
+	ws.isAlive = true;
 
-  ws.bettersend = function(message = "", data = {}) {
-    ws.send(JSON.stringify({ message, data }));
-  };
+	ws.bettersend = function(message = "", data = {}) {
+		ws.send(JSON.stringify({ message, data }));
+	};
 
-  ws.on("message", function incoming(raw_message) {
-    // to simulate socket.io
-    // each "data" will be a JSON encoded dictionary
-    // like this:
-    // {'message': [string message], 'data': [submitted data]}
-    console.log("received: message");
-    console.log(raw_message);
+	ws.on("message", function incoming(raw_message) {
+		// to simulate socket.io
+		// each "data" will be a JSON encoded dictionary
+		// like this:
+		// {'message': [string message], 'data': [submitted data]}
+		console.log("received: message");
+		console.log(raw_message);
 
-    var json = JSON.parse(raw_message);
-    var message = json.message;
-    var data = json.data;
-    vmix.onupdate = s => {
-      broadcast("vmix", vmix.lastmessage);
-    };
-    switch (message) {
-      case "echo":
-        broadcast("echo", data);
-        break;
-      case "status":
-        ws.bettersend("status", getStatus());
-        break;
-      case "lower3":
-        let status = getStatus();
-        ws.bettersend("lower3", status.lower3);
-        break;
-      case "config":
-        console.log("updating config");
-        for (let key of Object.keys(config)) {
-          if (config[key] != data[key]) config[key] = data[key];
-        }
-        if (pl) {
-          pl.host = config.PRO6_HOST;
-          pl.password = config.PRO6_SD_PASSWORD;
-          if (pl.connected) pl.ws.close();
-          pl.connect();
-        }
-        broadcast("status", getStatus());
-        break;
-      case "update_triggers":
-        console.log("updating triggers");
-        for (let i = 0; i < data.length; i++) {
-          pro6_triggers[i].enabled = data[i].enabled;
-        }
-        broadcast("status", getStatus());
-        break;
-      case "update_midi":
-        console.log("selecting new MIDI port");
-        midi.closePort();
-        midi.openPort(data);
-        break;
-      case "toggle_allow_triggers":
-        allow_triggers = data;
-        broadcast("status", getStatus());
-        break;
-    }
-  });
+		var json = JSON.parse(raw_message);
+		var message = json.message;
+		var data = json.data;
+		vmix.onupdate = (s) => {
+			broadcast("vmix", vmix.lastmessage);
+		};
+		switch (message) {
+			case "echo":
+				broadcast("echo", data);
+				break;
+			case "status":
+				ws.bettersend("status", getStatus());
+				break;
+			case "lower3":
+				let status = getStatus();
+				ws.bettersend("lower3", status.lower3);
+				break;
+			case "config":
+				console.log("updating config");
+				for (let key of Object.keys(config)) {
+					if (config[key] != data[key]) config[key] = data[key];
+				}
+				if (pl) {
+					pl.host = config.PRO6_HOST;
+					pl.password = config.PRO6_SD_PASSWORD;
+					if (pl.connected) pl.ws.close();
+					pl.connect();
+				}
+				broadcast("status", getStatus());
+				break;
+			case "update_triggers":
+				console.log("updating triggers");
+				for (let i = 0; i < data.length; i++) {
+					pro6_triggers[i].enabled = data[i].enabled;
+				}
+				broadcast("status", getStatus());
+				break;
+			case "update_midi":
+				console.log("selecting new MIDI port");
+				midi.closePort();
+				midi.openPort(data);
+				break;
+			case "toggle_allow_triggers":
+				allow_triggers = data;
+				broadcast("status", getStatus());
+				break;
+		}
+	});
 });
 
 // send keepalive pings
@@ -448,53 +432,49 @@ wss.on("connection", function connection(ws) {
 // finally, initialize the ProPresenter Connection
 // setup ProPresenter Listener
 pl = new Pro6Listener(config.PRO6_HOST, config.PRO6_SD_PASSWORD, {
-  onsysupdate: e => {
-    // console.log(e);
-  },
-  onslideupdate: e => {
-    // console.log(e);
-  },
-  ontimersupdate: e => {
-    // console.log(e);
-  },
-  onupdate: (data, pro6) => {
-    // console.log("SYSTEM: ");
-    // console.log(pro6.system_time);
-    // console.log("TIMERS: ");
-    // console.log(pro6.timers);
-    // console.log("SLIDES: ");
-    // console.log(pro6.slides);
+	onsysupdate: (e) => {
+		// console.log(e);
+	},
+	onslideupdate: (e) => {
+		// console.log(e);
+	},
+	ontimersupdate: (e) => {
+		// console.log(e);
+	},
+	onupdate: (data, pro6) => {
+		// console.log("SYSTEM: ");
+		// console.log(pro6.system_time);
+		// console.log("TIMERS: ");
+		// console.log(pro6.timers);
+		// console.log("SLIDES: ");
+		// console.log(pro6.slides);
 
-    console.log("--------- PRO6 UPDATE -------------");
-    console.log(data);
+		console.log("--------- PRO6 UPDATE -------------");
+		console.log(data);
 
-    // broadcast("pro6update", data);
-    broadcast("status", getStatus());
+		// broadcast("pro6update", data);
+		broadcast("status", getStatus());
 
-    // process triggers
-    let used = false;
-    if (allow_triggers) {
-      for (let trigger of pro6_triggers) {
-        if (
-          trigger.enabled &&
-          trigger.type == data.type &&
-          trigger.test(data.data)
-        ) {
-          console.log(`TRIGGER: ${trigger.name}`);
-          trigger.callback(data.data);
-          used = true;
-        }
-      }
-      if (!used) {
-        console.log("No triggers configured, for this data:");
-        // console.log(data);
-      }
-    } else {
-      console.log("ProPresenter Update, but triggers are disabled.");
-      // console.log(data);
-    }
-    console.log("-----------------------------------");
-  }
+		// process triggers
+		let used = false;
+		if (allow_triggers) {
+			for (let trigger of pro6_triggers) {
+				if (trigger.enabled && trigger.type == data.type && trigger.test(data.data)) {
+					console.log(`TRIGGER: ${trigger.name}`);
+					trigger.callback(data.data);
+					used = true;
+				}
+			}
+			if (!used) {
+				console.log("No triggers configured, for this data:");
+				// console.log(data);
+			}
+		} else {
+			console.log("ProPresenter Update, but triggers are disabled.");
+			// console.log(data);
+		}
+		console.log("-----------------------------------");
+	},
 });
 
 // and start the ui server
@@ -509,135 +489,135 @@ server.listen(config.UI_SERVER_PORT);
 // OTHER FUNCTIONS
 function noop() {}
 function getStatus() {
-  if (vmix_lower3.text == "" && pl.slides.current.text != "") {
-    vmix_lower3.text = pl.slides.current.text;
-    vmix_lower3.html = pl.slides.current.text;
-  }
-  return {
-    config,
-    allow_triggers,
-    triggers: pro6_triggers,
-    pro6_status: pl.status(),
-    vmix_status: vmix.lastmessage,
-    midi_status: midi.status(),
-    lower3: vmix_lower3
-  };
+	if (vmix_lower3.text == "" && pl.slides.current.text != "") {
+		vmix_lower3.text = pl.slides.current.text;
+		vmix_lower3.html = pl.slides.current.text;
+	}
+	return {
+		config,
+		allow_triggers,
+		triggers: pro6_triggers,
+		pro6_status: pl.status(),
+		vmix_status: vmix.lastmessage,
+		midi_status: midi.status(),
+		lower3: vmix_lower3,
+	};
 }
 function broadcast(message, data) {
-  wss.clients.forEach(function each(ws) {
-    ws.send(JSON.stringify({ message, data }));
-  });
+	wss.clients.forEach(function each(ws) {
+		ws.send(JSON.stringify({ message, data }));
+	});
 }
 function triggerStatus() {
-  let retval = { allow_triggers, triggers: [] };
-  for (let i = 0; i < pro6_triggers.length; i++) {
-    let t = pro6_triggers[i];
-    let o = {
-      name: t.name,
-      description: t.description,
-      enabled: t.enabled,
-      id: i
-    };
-    retval.triggers.push(o);
-  }
-  return retval;
+	let retval = { allow_triggers, triggers: [] };
+	for (let i = 0; i < pro6_triggers.length; i++) {
+		let t = pro6_triggers[i];
+		let o = {
+			name: t.name,
+			description: t.description,
+			enabled: t.enabled,
+			id: i,
+		};
+		retval.triggers.push(o);
+	}
+	return retval;
 }
 
 function httpHandler(req, res) {
-  // console.log(req);
-  if (req.url.match(/\/api\//)) {
-    let match;
-    let output;
+	// console.log(req);
+	if (req.url.match(/\/api\//)) {
+		let match;
+		let output;
 
-    // get help
-    match = req.url.match(/\/api\/help\/?$/);
-    if (match) {
-      res.writeHead(200, { "Content-type": "text/plain;charset=UTF-8" });
-      res.end(help);
-      return;
-    } else {
-      res.writeHead(200, { "Content-type": "application/json;charset=UTF-8" });
-    }
+		// get help
+		match = req.url.match(/\/api\/help\/?$/);
+		if (match) {
+			res.writeHead(200, { "Content-type": "text/plain;charset=UTF-8" });
+			res.end(help);
+			return;
+		} else {
+			res.writeHead(200, { "Content-type": "application/json;charset=UTF-8" });
+		}
 
-    // get all triggers
-    match = req.url.match(/\/api\/triggers\/?$/);
-    if (match) {
-      output = JSON.stringify(triggerStatus());
-    }
+		// get all triggers
+		match = req.url.match(/\/api\/triggers\/?$/);
+		if (match) {
+			output = JSON.stringify(triggerStatus());
+		}
 
-    match = req.url.match(/\/api\/toggle\/?$/);
-    if (match) {
-      allow_triggers = !allow_triggers;
-      output = JSON.stringify(triggerStatus());
-    }
+		match = req.url.match(/\/api\/toggle\/?$/);
+		if (match) {
+			allow_triggers = !allow_triggers;
+			output = JSON.stringify(triggerStatus());
+		}
 
-    match = req.url.match(/\/api\/toggle\/(\d*)\/?$/);
-    if (match) {
-      let id = +match[1];
-      if (id < pro6_triggers.length && id >= 0) {
-        pro6_triggers[id].enabled = !pro6_triggers[id].enabled;
-      }
-      output = JSON.stringify(triggerStatus());
-    }
-    res.end(output);
-  } else {
-    // does the request result in a real file?
-    let pathName = url.parse(req.url).pathname;
-    if (pathName == "/") pathName = "/index.html";
-    console.log(pathName);
-    fs.readFile(__dirname + "/ui" + pathName, function(err, data) {
-      if (err) {
-        res.writeHead(404);
-        res.write("Page not found.");
-        res.end();
-      } else {
-        res.writeHead(200, { "Content-type": "text/html;charset=UTF-8" });
-        res.write(data);
-        res.end();
-      }
-    });
-  }
+		match = req.url.match(/\/api\/toggle\/(\d*)\/?$/);
+		if (match) {
+			let id = +match[1];
+			if (id < pro6_triggers.length && id >= 0) {
+				pro6_triggers[id].enabled = !pro6_triggers[id].enabled;
+			}
+			output = JSON.stringify(triggerStatus());
+		}
+		res.end(output);
+	} else {
+		// does the request result in a real file?
+		let pathName = url.parse(req.url).pathname;
+		if (pathName == "/") pathName = "/index.html";
+		console.log(pathName);
+		fs.readFile(__dirname + "/ui" + pathName, function(err, data) {
+			if (err) {
+				res.writeHead(404);
+				res.write("Page not found.");
+				res.end();
+			} else {
+				res.writeHead(200, { "Content-type": "text/html;charset=UTF-8" });
+				res.write(data);
+				res.end();
+			}
+		});
+	}
 }
 
 function markdown(s) {
-  s = s.replace(/_(.*?)_/g, `<span class="blank">$1</span>`);
-  return s;
+	s = s.replace(/_(.*?)_/g, `<span class="blank">$1</span>`);
+	return s;
 }
 
 function findall(regex, subject) {
-  let matches = [];
-  let match = true;
-  while (match) {
-    match = regex.exec(subject);
-    if (match) {
-      matches.push(match);
-    }
-  }
-  return matches;
+	let matches = [];
+	let match = true;
+	while (match) {
+		match = regex.exec(subject);
+		if (match) {
+			matches.push(match);
+		}
+	}
+	return matches;
 }
 
 function timestamp() {
-  let d = new Date();
-  let year = d.getFullYear();
-  let month = d
-    .getMonth()
-    .toString()
-    .padStart(2, "0");
-  let day = d
-    .getDate()
-    .toString()
-    .padStart(2, "0");
-  let hour = d
-    .getHours()
-    .toString()
-    .padStart(2, "0");
-  let min = d
-    .getMinutes()
-    .toString()
-    .padStart(2, "0");
-  let sec = d
-    .getSeconds()
-    .toString()
-    .padStart(2, "0");
-  return `${year}-${month}-${day} ${hour}:${min}:${sec}`;
+	let d = new Date();
+	let year = d.getFullYear();
+	let month = d
+		.getMonth()
+		.toString()
+		.padStart(2, "0");
+	let day = d
+		.getDate()
+		.toString()
+		.padStart(2, "0");
+	let hour = d
+		.getHours()
+		.toString()
+		.padStart(2, "0");
+	let min = d
+		.getMinutes()
+		.toString()
+		.padStart(2, "0");
+	let sec = d
+		.getSeconds()
+		.toString()
+		.padStart(2, "0");
+	return `${year}-${month}-${day} ${hour}:${min}:${sec}`;
 }
