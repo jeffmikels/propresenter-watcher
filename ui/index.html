@@ -5,7 +5,6 @@
 		<meta http-equiv="x-ua-compatible" content="ie=edge" />
 		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
 		<title>ProPresenter Watcher</title>
-
 		<style media="screen">
 			body {
 				margin: 10px auto;
@@ -15,6 +14,9 @@
 				font-family: Muli, sans-serif;
 				box-sizing: border-box;
 			}
+			a {text-decoration:none;font-weight:900;color:red;}
+			a:hover {color:white;}
+			a:visited {color:purple;}
 			#app {
 				float: left;
 				width: 100%;
@@ -154,7 +156,8 @@
 				</span>
 				| VMIX: <span class="vmix">{{ vmix_status }}</span>
 			</status>
-			<h1>ProPresenter Watcher</h1>
+			<h1>ProPresenter Watcher <small><a href="lower3.html">( open lower third )</a></small></h1>
+			
 			<hr />
 			<div class="sidebar" v-if="pro6_status.slides">
 				<div class="current_slide" v-if="pro6_status.slides.current">
