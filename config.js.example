@@ -1,16 +1,29 @@
 const config = {
 	UI_SERVER_PORT: 7000,
-	PRO6_HOST: "127.0.0.1:12345",
+	LOWER3_IMAGE: "/lower3.jpg",
+
+	// PROPRESENTER SETTINGS,
+	PRO6_HOST: "192.168.1.4:60157",
 	PRO6_SD_PASSWORD: "password",
 	PRO6_CONTROL_PASSWORD: "password",
-	LCC_LIVE_URL: "https://example.org:8999", // no final slash
-	VMIX_HOST: "127.0.0.2:8088", // no final slash
-	VMIX_LYRICS_INPUT: 1,
-	LOGGER_URL: "https://example.org/log",
-	LOGGER_KEY: "apikey",
-	USEWEBLOG: false,
-	MIDI_PORT: 0,
-	LOWER3_IMAGE: '/lower3.png',
+
+	// MIDI SETTINGS
+	MIDI_PORT: 4,
+
+	// LCC LIVE SETTINGS
+	LCC_LIVE_URL: "https://example.org:99999", // no final slash
+
+	// VMIX SETTINGS
+	VMIX_HOST: "192.168.1.5:8088", // no final slash
+	VMIX_LYRICS_INPUT: 10,
+
+	// COMPANION (BITFOCUS) SETTINGS
+	COMPANION_HOSTS: { first: "192.168.1.4:51234", second: "192.168.1.5:51234" },
+
+	// WEB LOGGER SETTINGS
+	LOGGER_URL: "https://example.org/log/index.php",
+	LOGGER_KEY: "key",
+	USEWEBLOG: true,
 };
 
 module.exports = config;

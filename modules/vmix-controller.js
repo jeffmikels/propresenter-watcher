@@ -66,6 +66,17 @@ class VmixController {
 		this.send(cmd);
 	}
 
+	// type can be In, Out, On, Off or nothing for toggle
+	// In/Out do a transition, On/Off do a cut
+	setOverlay(overlay = 1, type = null, input = null) {
+		if (isNaN(+overlay)) overlay = 1;
+		let cmd;
+		if (type == null) cmd = `Function=OverlayInput${+overlay}`;
+		else cmd = `Function=OverlayInput${+overlay}${type}`;
+		if (input != null) cmd += `&Input=${input}`;
+		this.send(cmd);
+	}
+
 	api(options) {
 		let cmds = [];
 		for (let [key, value] of Object.entries(options)) {
