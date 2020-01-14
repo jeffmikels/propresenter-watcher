@@ -77,10 +77,10 @@ class VmixController {
 		this.send(cmd);
 	}
 
-	triggerStreaming(onoff = 1) {
+	triggerStreaming(onoff = 1, stream = 0) {
 		let cmd;
-		if (onoff == "off" || onoff == false || onoff == "0" || onoff == 0) cmd = "Function=StopStreaming";
-		else cmd = "Function=StartStreaming";
+		if (onoff == "off" || onoff == false || onoff == "0" || onoff == 0) cmd = `Function=StopStreaming&Value=${stream}`;
+		else cmd = `Function=StartStreaming&Value=${stream}`;
 		this.send(cmd);
 	}
 
