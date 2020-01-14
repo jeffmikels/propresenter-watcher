@@ -110,6 +110,9 @@ const vmix_overlay_pattern = /vmixoverlay\[(.+?)\s*(?:,\s*(.+?))?\s*(?:,\s*(.+?)
 // manually set the vmix lower3 html.
 const vmix_lower3_pattern = /\[l3\](.*?)\[\/l3\]/gis;
 
+// start streaming
+const vmix_streaming_pattern = /vmixstream\[([10]|on|off)\]/gi;
+
 // For advanced vMix control, put vMix API commands in JSON text between vmix tags
 // [vmix]
 // {
@@ -382,6 +385,18 @@ const pro6_triggers = [
 					let type = match[2] ? match[2] : null;
 					let input = match[3] ? match[3] : null;
 					vmix.setOverlay(overlay, type, input);
+				}
+			}
+
+			// streaming trigger
+			match = true;
+			while (match) {
+				match = vmix_streaming_pattern.exec(slides.current.notes);
+				if (match) {
+					Log(`vmix match: ${match[0]}`);
+					let onoff = match[1];
+					if (onoff == "on" || onoff == "1") vmix.triggerStream(true);
+					else vmix.triggerStream(false);
 				}
 			}
 
