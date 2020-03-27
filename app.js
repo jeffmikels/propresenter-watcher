@@ -15,6 +15,7 @@ const { LiveEventController } = require("./modules/live-event-controller.js");
 const { VmixController } = require("./modules/vmix-controller.js");
 const { CompanionController } = require("./modules/companion-controller.js");
 const { Midi } = require("./modules/midi.js");
+const { OnyxController } = require("./modules/onyx.js");
 
 // web logger
 let Log = console.log;
@@ -47,6 +48,9 @@ for (let name of Object.keys(config.COMPANION_HOSTS)) {
 // MIDI HANDLER
 let midi = new Midi();
 if (config.USEMIDI && config.MIDI_PORT) midi.openPort(config.MIDI_PORT);
+
+// ONYX HANDLER
+let onyx = new OnyxController(config.ONYX_IP, config.ONYX_PORT);
 
 // global ProPresenterListener for future use;
 let pl;
@@ -164,6 +168,10 @@ const midi_cc_pattern = /cc\[(\d+)\s*(?:,\s*(\d+?))?\s*(?:,\s*(\d+))?\s*\]/gi;
 // fps is frames per second... defaults to 24
 // mtc[] will turn off the timecode generator
 const midi_mtc_pattern = /mtc\[(?:(.+?))?\s*(?:,\s*(\d+))?\s*\]/gi;
+
+// onyx patterns
+const onyx_go_pattern = /onyxgo\[(.+?)\s*(?:,\s*(\d+))?\s*\]/gi;
+const onyx_release_pattern = /onyxrelease\[(.+?)\s*(?:,\s*(\d+))?\s*\]/gi;
 
 let allow_triggers = true;
 const pro6_triggers = [
@@ -413,6 +421,37 @@ const pro6_triggers = [
 		},
 	},
 	{
+		name: "Onyx Notes Checker",
+		type: "slides",
+		enabled: true,
+		test: () => true,
+		callback: (slides) => {
+			let match;
+
+			match = true;
+			while (match) {
+				match = onyx_go_pattern.exec(slides.current.notes);
+				if (match) {
+					Log(`onyx match: ${match[0]}`);
+					let cuelist = match[1];
+					let cue = match[2] ? match[2] : null;
+					onyx.goCuelist(cuelist, cue);
+				}
+			}
+
+			match = true;
+			while (match) {
+				match = onyx_release_pattern.exec(slides.current.notes);
+				if (match) {
+					Log(`onyx match: ${match[0]}`);
+					let cuelist = match[1];
+					let cue = match[2] ? match[2] : null;
+					onyx.releaseCuelist(cuelist, cue);
+				}
+			}
+		},
+	},
+	{
 		name: "Companion Notes Checker",
 		type: "slides",
 		enabled: true,
@@ -577,7 +616,7 @@ pl = new Pro6Listener(config.PRO6_HOST, config.PRO6_SD_PASSWORD, {
 			}
 			if (!used) {
 				console.log("No triggers configured, for this data:");
-				// console.log(data);
+				console.log(data);
 			}
 		} else {
 			console.log("ProPresenter Update, but triggers are disabled.");

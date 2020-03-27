@@ -14,9 +14,17 @@
 				font-family: Muli, sans-serif;
 				box-sizing: border-box;
 			}
-			a {text-decoration:none;font-weight:900;color:red;}
-			a:hover {color:white;}
-			a:visited {color:purple;}
+			a {
+				text-decoration: none;
+				font-weight: 900;
+				color: red;
+			}
+			a:hover {
+				color: white;
+			}
+			a:visited {
+				color: purple;
+			}
 			#app {
 				float: left;
 				width: 100%;
@@ -138,6 +146,10 @@
 				white-space: pre-line;
 				overflow: hidden;
 			}
+			#lower3 {
+				--iw: 100%;
+				width: 100%;
+			}
 		</style>
 		<meta charset="UTF-8" />
 	</head>
@@ -156,8 +168,15 @@
 				</span>
 				| VMIX: <span class="vmix">{{ vmix_status }}</span>
 			</status>
-			<h1>ProPresenter Watcher <small><a href="lower3.html">( open lower third )</a></small></h1>
-			
+			<h1>
+				ProPresenter Watcher <small><a href="lower3.html">( open lower third )</a></small>
+			</h1>
+
+			<iframe id="lower3" src="lower3.html"></iframe>
+			<a href="sd.html">Simple Stage Display 1</a>
+			<a href="presenter.html">Presenter Notes</a>
+			<a href="prompter.html">TelePrompter</a>
+
 			<hr />
 			<div class="sidebar" v-if="pro6_status.slides">
 				<div class="current_slide" v-if="pro6_status.slides.current">
@@ -211,12 +230,7 @@
 						<label class="text">MIDI Output Port </label>
 						<select @change="update_midi" v-model="selected_port">
 							<option>-- SELECT MIDI PORT --</option>
-							<option
-								v-for="port in midi_status.ports"
-								:selected="port.id == selected_port"
-								:value="port.id"
-								>{{ port.name }}</option
-							>
+							<option v-for="port in midi_status.ports" :selected="port.id == selected_port" :value="port.id">{{ port.name }}</option>
 						</select>
 					</li>
 				</ul>
@@ -231,12 +245,7 @@
 					<hr />
 					<li v-for="trigger in triggers">
 						<label>
-							<input
-								:disabled="!allow_triggers"
-								type="checkbox"
-								@change="update_triggers"
-								v-model="trigger.enabled"
-							/>
+							<input :disabled="!allow_triggers" type="checkbox" @change="update_triggers" v-model="trigger.enabled" />
 							{{ trigger.name }}
 						</label>
 					</li>
@@ -347,9 +356,7 @@
 						};
 						ws.onclose = (event) => {
 							this.connected = false;
-							this.log(
-								`disconnected from watcher service... reconnecting in ${reconnectTime / 1000} seconds`
-							);
+							this.log(`disconnected from watcher service... reconnecting in ${reconnectTime / 1000} seconds`);
 							reconnectTimer = setTimeout(() => {
 								this.connect();
 							}, reconnectTime);

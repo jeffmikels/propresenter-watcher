@@ -39,6 +39,7 @@ class Pro6Listener {
 		this.password = password;
 		this.active = false;
 
+		this.stage_message = "";
 		this.system_time = { text: "", seconds: 0 };
 		this.timers = {};
 		this.slides = {
@@ -47,6 +48,7 @@ class Pro6Listener {
 		};
 
 		this.onupdate = options.onupdate;
+		this.onmsgupdate = options.onmsgupdate;
 		this.onsysupdate = options.onsysupdate;
 		this.onslideupdate = options.onslideupdate;
 		this.ontimersupdate = options.ontimersupdate;
@@ -58,6 +60,7 @@ class Pro6Listener {
 		return {
 			system_time: this.system_time,
 			timers: this.timers,
+			stage_message: this.stage_message,
 			slides: this.slides,
 			connected: this.connected,
 			active: this.active,
@@ -119,7 +122,7 @@ class Pro6Listener {
 	}
 
 	check(data) {
-		// console.log(data);
+		console.log(data);
 		let newdata = {};
 		switch (data.acn) {
 			case "ath":
@@ -144,6 +147,12 @@ class Pro6Listener {
 				this.system_time = { text: data.txt, seconds: timestring2secs(data.txt) };
 				newdata = { type: "systime", data: this.system_time };
 				if (this.onsysupdate) this.onsysupdate(this.system_time);
+				break;
+			case "msg":
+				// { acn: 'msg', txt: 'Test' }
+				this.stage_message = data.txt;
+				newdata = { type: "message", data: this.stage_message };
+				if (this.onmsgupdate) this.onmsgupdate(this.stage_message);
 				break;
 			case "fv":
 				// we expect 4 items identified by the 'acn' field
