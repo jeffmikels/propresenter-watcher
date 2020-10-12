@@ -28,9 +28,15 @@
 				height: 14vw;
 				box-sizing: border-box;
 				padding: 0px 22vw 0px 1vw; /* FOR LOGO ON RIGHT (SECOND ONE WINS)*/
-				padding: 0px 1vw 0px 22vw; /* FOR LOGO ON LEFT  (SECOND ONE WINS)*/
+				padding: 0px 1vw 0px 19vw; /* FOR LOGO ON LEFT  (SECOND ONE WINS) (default) */
 				overflow: hidden;
 				box-sizing:border-box;
+				
+				font-family: Muli;
+				font-weight: 800;
+				font-size: 60pt;
+				text-shadow: 2px 2px 9px rgba(0, 0, 0, 1);
+				letter-spacing: -2px;
 			}
 			#lower3 img {
 				position: absolute;
@@ -40,20 +46,24 @@
 				height: 14vw;
 				object-fit:cover;
 			}
-			#lower3 #text {
-				font-family: Muli;
-				font-weight: 800;
-				font-size: 60pt;
-				text-shadow: 2px 2px 9px rgba(0, 0, 0, 1);
-				letter-spacing: -2px;
+			#lower3 #textwrapper {
 				position: relative;
 				top: 50%;
 				transform: translateY(-50%);
 				line-height: 1;
 				white-space: pre-line;
+				color: white;
+			}
+			#lower3 #caption {
+				font-size: 36px;
+				line-height: 1em;
+				color:#98c6fe;
+				text-transform: uppercase;
 			}
 			span.blank {
-				color: #bef7ff;
+				/* color: #bef7ff; */
+				color: #ffc552;
+				text-shadow: 2px 2px 9px rgba(0, 0, 0, 1);
 				text-transform: uppercase;
 				text-decoration: underline;
 				font-weight: 900;
@@ -65,9 +75,12 @@
 
 	<body>
 		<div id="app" :class="">
-			<div id="lower3">
+			<div id="lower3" :class="{hascaption:caption}">
 				<img :src="image" alt="" />
-				<div id="text" v-html="html"></div>
+				<div id="textwrapper">
+					<div id="caption" v-html="caption"></div>
+					<div id="text" v-html="html"></div>
+				</div>
 			</div>
 		</div>
 
@@ -84,6 +97,7 @@
 				data: {
 					text: "",
 					html: "",
+					caption: "",
 					image: "lower3.jpg"
 				},
 				computed: {},
@@ -109,11 +123,13 @@
 								case "lower3":
 									this.html = data.html;
 									this.text = data.text;
+									this.caption = data.caption;
 									this.image = data.image;
 									break;
 								case "status":
 									this.html = data.lower3.html;
 									this.text = data.lower3.text;
+									this.caption = data.lower3.caption;
 									this.image = data.lower3.image;
 									break;
 							}
@@ -139,13 +155,13 @@
 					},
 					scaleText() {
 						// scale text to fit
-						let el = document.getElementById("text");
-						el.style.fontSize = "80px";
+						let el = document.getElementById("textwrapper");
+						el.style.fontSize = "70px";
 
 						let l3 = document.getElementById("lower3");
 						let padding = 10;
 						let targetHeight = l3.offsetHeight - padding * 2;
-						var i = 80;
+						var i = 70;
 						while (el.offsetHeight > targetHeight) {
 							i--;
 							// console.log(i);

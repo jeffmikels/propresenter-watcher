@@ -22,7 +22,7 @@ let Log = console.log;
 if (config.USEWEBLOG) {
 	const WebLogger = require("./modules/web-logger.js");
 	const weblog = new WebLogger(config.LOGGER_URL, config.LOGGER_KEY);
-	Log = function(s, allowWebLog = true) {
+	Log = function (s, allowWebLog = true) {
 		if (allowWebLog) weblog.log(s);
 		console.log(s);
 	};
@@ -36,6 +36,7 @@ let vmix = new VmixController("http://" + config.VMIX_HOST);
 let vmix_lower3 = {
 	text: "",
 	html: "",
+	caption: "",
 	image: config.LOWER3_IMAGE,
 };
 
@@ -50,7 +51,8 @@ let midi = new Midi();
 if (config.USEMIDI && config.MIDI_PORT) midi.openPort(config.MIDI_PORT);
 
 // ONYX HANDLER
-let onyx = new OnyxController(config.ONYX_IP, config.ONYX_PORT);
+let onyx;
+if (config.USEONYX) onyx = new OnyxController(config.ONYX_IP, config.ONYX_PORT);
 
 // global ProPresenterListener for future use;
 let pl;
@@ -113,6 +115,7 @@ const vmix_overlay_pattern = /vmixoverlay\[(.+?)\s*(?:,\s*(.+?))?\s*(?:,\s*(.+?)
 
 // manually set the vmix lower3 html.
 const vmix_lower3_pattern = /\[l3\](.*?)\[\/l3\]/gis;
+const vmix_lower3caption_pattern = /\[l3caption\](.*?)\[\/l3caption\]/gis;
 
 // start streaming
 const vmix_streaming_pattern = /vmixstream\[([10]|on|off)\]/gi;
@@ -307,6 +310,7 @@ const pro6_triggers = [
 			// set default lower3 text always
 			vmix_lower3.text = slides.current.text.trim();
 			vmix_lower3.html = markdown(slides.current.text.trim());
+			vmix_lower3.caption = ''
 
 			// vmix triggers are allowed
 			// fade trigger
@@ -362,6 +366,16 @@ const pro6_triggers = [
 					Log(`vmix lower3 override: ${match[0]}`);
 					vmix_lower3.text = match[1].trim();
 					vmix_lower3.html = markdown(match[1].trim());
+				}
+			}
+
+			match = true;
+			while (match) {
+				match = vmix_lower3caption_pattern.exec(slides.current.notes);
+				if (match) {
+					// console.log(match);
+					Log(`vmix lower3 caption: ${match[0]}`);
+					vmix_lower3.caption = markdown(match[1].trim());
 				}
 			}
 
@@ -509,7 +523,7 @@ const wss = new WebSocket.Server({
 wss.on("connection", function connection(ws) {
 	ws.isAlive = true;
 
-	ws.bettersend = function(message = "", data = {}) {
+	ws.bettersend = function (message = "", data = {}) {
 		ws.send(JSON.stringify({ message, data }));
 	};
 
@@ -643,6 +657,7 @@ function getStatus() {
 	if (vmix_lower3.text == "" && pl.slides.current.text != "") {
 		vmix_lower3.text = pl.slides.current.text;
 		vmix_lower3.html = pl.slides.current.text;
+		vmix_lower3.caption = pl.slides.current.caption;
 	}
 	return {
 		config,
@@ -716,13 +731,16 @@ function httpHandler(req, res) {
 		let pathName = url.parse(req.url).pathname;
 		if (pathName == "/") pathName = "/index.html";
 		console.log(pathName);
-		fs.readFile(__dirname + "/ui" + pathName, function(err, data) {
+		fs.readFile(__dirname + "/ui" + pathName, function (err, data) {
 			if (err) {
 				res.writeHead(404);
 				res.write("Page not found.");
 				res.end();
 			} else {
-				res.writeHead(200, { "Content-type": "text/html;charset=UTF-8" });
+				let header = {};
+				if (pathName.match(".html")) header = { "Content-type": "text/html;charset=UTF-8" };
+				if (pathName.match(".css")) header = { "Content-type": "text/css;charset=UTF-8" };
+				res.writeHead(200, header);
 				res.write(data);
 				res.end();
 			}
@@ -750,25 +768,10 @@ function findall(regex, subject) {
 function timestamp() {
 	let d = new Date();
 	let year = d.getFullYear();
-	let month = d
-		.getMonth()
-		.toString()
-		.padStart(2, "0");
-	let day = d
-		.getDate()
-		.toString()
-		.padStart(2, "0");
-	let hour = d
-		.getHours()
-		.toString()
-		.padStart(2, "0");
-	let min = d
-		.getMinutes()
-		.toString()
-		.padStart(2, "0");
-	let sec = d
-		.getSeconds()
-		.toString()
-		.padStart(2, "0");
+	let month = d.getMonth().toString().padStart(2, "0");
+	let day = d.getDate().toString().padStart(2, "0");
+	let hour = d.getHours().toString().padStart(2, "0");
+	let min = d.getMinutes().toString().padStart(2, "0");
+	let sec = d.getSeconds().toString().padStart(2, "0");
 	return `${year}-${month}-${day} ${hour}:${min}:${sec}`;
 }
