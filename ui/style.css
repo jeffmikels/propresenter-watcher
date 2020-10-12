@@ -1,0 +1,111 @@
+html,
+body {
+	margin: 0;
+	width: 100%;
+	height: 100%;
+	height: auto;
+	overflow: hidden;
+}
+
+body {
+	background: black;
+	color: ivory;
+	font-family: Muli, sans-serif;
+	font-weight: 600;
+	box-sizing: border-box;
+}
+
+body {
+	text-align: center;
+}
+
+.timers {
+	position: fixed;
+	bottom: 0;
+	left: 0;
+	right: 0;
+}
+
+.timers .timer {
+	display: inline-block;
+}
+
+.timer:nth-child(3n-1) {
+	color: yellow;
+}
+
+.timer:nth-child(3n-2) {
+	color: lightgreen;
+}
+
+.timer:nth-child(3n-3) {
+	color: orchid;
+}
+
+.timer {
+	font-size: 80px;
+	margin: 0 40px;
+}
+
+.timer.negative {
+	color: red;
+}
+
+.timer .small {
+	font-size: 24px;
+}
+
+.message {
+	font-size: 200px;
+	letter-spacing: -20px;
+	position: absolute;
+	color: lightblue;
+	top: 0;
+	left: 0;
+	right: 0;
+}
+
+span.blank {
+	color: #bef7ff;
+	text-transform: uppercase;
+	text-decoration: underline;
+	font-weight: 900;
+	letter-spacing: -5px;
+}
+
+.mirror {
+	transform: matrix(-1, 0, 0, 1, 0, 0);
+	/* transform-origin: top left; */
+}
+
+.prompter {
+	font-size: 50pt;
+	text-align: left;
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	height: 100%;
+	width: 100%;
+	box-sizing: border-box;
+	padding: 10px 30px;
+}
+.prompter p {
+	margin: 0;
+	margin-bottom: 0.3em;
+	line-height: 1.1em;
+}
+/* .current,
+			.next {
+				white-space: pre-wrap;
+			} */
+
+.current {
+	color: yellow;
+}
+
+.next {
+	color: grey;
+	font-size: 0.5em;
+}

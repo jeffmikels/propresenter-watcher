@@ -4,105 +4,21 @@
 		<meta charset="utf-8" />
 		<meta http-equiv="x-ua-compatible" content="ie=edge" />
 		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+		<link href="https://fonts.googleapis.com/css2?family=Muli:wght@555&display=swap" rel="stylesheet" />
 		<title>ProPresenter Notes Teleprompter</title>
+		<link rel="stylesheet" type="text/css" href="style.css" />
 
-		<style media="screen">
-			html,
-			body {
-				margin: 0;
-				width: 100%;
-				height: 100%;
-				height: auto;
-				overflow: hidden;
-			}
-			body {
-				background: black;
-				color: ivory;
-				font-family: Muli, sans-serif;
-				box-sizing: border-box;
-			}
-			body {
-				text-align: center;
-			}
-			.timers {
-				position: fixed;
-				bottom: 0;
-				left: 0;
-				right: 0;
-			}
-			.timers .timer {
-				display: inline-block;
-			}
-			.timer:nth-child(3n-1) {
-				color: yellow;
-			}
-			.timer:nth-child(3n-2) {
-				color: lightgreen;
-			}
-			.timer:nth-child(3n-3) {
-				color: orchid;
-			}
-			.timer {
-				font-size: 80px;
-				margin: 0 40px;
-			}
-			.timer.negative {
-				color: red;
-			}
-			.timer .small {
-				font-size: 24px;
-			}
-			.message {
-				font-size: 200px;
-				letter-spacing: -20px;
-				position: absolute;
-				color: lightblue;
-				top: 0;
-				left: 0;
-				right: 0;
-			}
-			span.blank {
-				color: #bef7ff;
-				text-transform: uppercase;
-				text-decoration: underline;
-				font-weight: 900;
-				letter-spacing: -5px;
-			}
-			.mirror {
-				transform: matrix(-1, 0, 0, 1, 0, 0);
-				/* transform-origin: top left; */
-			}
-			.prompter {
-				font-size: 50pt;
-				text-align: left;
-				position: absolute;
-				top: 0;
-				left: 0;
-				right: 0;
-				bottom: 0;
-				height: 100%;
-				width: 100%;
-				box-sizing: border-box;
-				padding: 10px 30px;
-			}
-			.current {
-				color: yellow;
-			}
-			.next {
-				color: grey;
-				font-size: 0.8em;
-			}
-		</style>
+		<style media="screen"></style>
 		<meta charset="UTF-8" />
 	</head>
 
 	<body>
 		<div id="app" class="prompter mirror">
 			<div id="main">
-				<div class="current">{{slides.current.text}}</div>
-				<div class="current notes">{{slides.current.notes}}</div>
-				<div class="next">{{slides.next.text}}</div>
-				<div class="next notes">{{slides.next.notes}}</div>
+				<div class="current" v-html="makeParas(slides.current.text)"></div>
+				<div class="current notes" v-html="slides.current.notes"></div>
+				<div class="next" v-html="makeParas(slides.next.text)"></div>
+				<div class="next notes" v-html="slides.next.notes"></div>
 			</div>
 			<div class="timers">
 				<div class="timer" :class="{negative: timer.text.match(/^-/)}" v-for="timer in timers" v-if="!timer.text.match(/--/)">
@@ -130,6 +46,10 @@
 				},
 				computed: {},
 				methods: {
+					makeParas(s = "") {
+						let items = s.split(/\n/).map((e) => `<p>${e}</p>`);
+						return items.join("");
+					},
 					toggle(timer) {
 						if (!this.smalls[timer.uid]) this.smalls[timer.uid] = true;
 						else this.smalls[timer.uid] = false;
@@ -144,7 +64,7 @@
 
 						// connect the websocket
 						ws = new WebSocket(`ws://${document.location.host}`);
-						ws.bettersend = function(message = "", data = {}) {
+						ws.bettersend = function (message = "", data = {}) {
 							ws.send(JSON.stringify({ message, data }));
 						};
 
@@ -193,10 +113,10 @@
 						}
 					},
 				},
-				updated: function() {
+				updated: function () {
 					this.scaleText(true);
 				},
-				mounted: function() {
+				mounted: function () {
 					window.addEventListener("resize", () => {
 						this.scaleText();
 						console.log("resized");
