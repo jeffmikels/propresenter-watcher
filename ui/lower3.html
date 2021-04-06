@@ -28,15 +28,22 @@
 				height: 14vw;
 				box-sizing: border-box;
 				padding: 0px 22vw 0px 1vw; /* FOR LOGO ON RIGHT (SECOND ONE WINS)*/
-				padding: 0px 1vw 0px 19vw; /* FOR LOGO ON LEFT  (SECOND ONE WINS) (default) */
+				padding: 0px 1vw 0px 15vw; /* FOR LOGO ON LEFT  (SECOND ONE WINS) (default) */
 				overflow: hidden;
 				box-sizing:border-box;
 				
 				font-family: Muli;
 				font-weight: 800;
 				font-size: 60pt;
-				text-shadow: 2px 2px 9px rgba(0, 0, 0, 1);
-				letter-spacing: -2px;
+				letter-spacing: -1px;
+				text-shadow: 2px 2px 9px rgba(0, 0, 0, 1);        /* BLACK SHADOW (SECOND ONE WINS) */
+				text-shadow:
+					1px  0px 2px rgba(255, 255, 255, .25),
+					0px  1px 2px rgba(255, 255, 255, .25),
+					-1px 0px 2px rgba(255, 255, 255, .25),
+					0px -1px 2px rgba(255, 255, 255, .25);  /* WHITE GLOW (SECOND ONE WINS) */
+				-webkit-text-stroke: 0px black;
+				color: black;
 			}
 			#lower3 img {
 				position: absolute;
@@ -52,22 +59,27 @@
 				transform: translateY(-50%);
 				line-height: 1;
 				white-space: pre-line;
-				color: white;
 			}
 			#lower3 #caption {
-				font-size: 36px;
+				font-family: "Muli Black", Muli;
+				font-weight:900;
+				position:absolute;
+				top:0;
+				right: 0;
+				font-size: 14px;
 				line-height: 1em;
-				color:#98c6fe;
+/*				color:#98c6fe;*/
+/*				-webkit-text-stroke: 1px #98c6fe;*/
 				text-transform: uppercase;
 			}
 			span.blank {
-				/* color: #bef7ff; */
 				color: #ffc552;
+				-webkit-text-stroke: 1px #ffc552;
 				text-shadow: 2px 2px 9px rgba(0, 0, 0, 1);
 				text-transform: uppercase;
 				text-decoration: underline;
 				font-weight: 900;
-				letter-spacing: -5px;
+				letter-spacing: -2px;
 			}
 		</style>
 		<meta charset="UTF-8" />
@@ -77,8 +89,8 @@
 		<div id="app" :class="">
 			<div id="lower3" :class="{hascaption:caption}">
 				<img :src="image" alt="" />
+				<div id="caption" v-html="caption"></div>
 				<div id="textwrapper">
-					<div id="caption" v-html="caption"></div>
 					<div id="text" v-html="html"></div>
 				</div>
 			</div>
