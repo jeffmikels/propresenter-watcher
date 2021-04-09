@@ -10,7 +10,17 @@ var server = cp.fork( main );
 console.log( "Server started" );
 
 fs.watch( '.', { recursive: true }, function ( event, filename ) {
-	console.log( `${main} file changed on disk... reloading` );
+	console.log( `${filename} file changed on disk...` );
+	if ( filename.match( /\/ui\// ) ) {
+		console.log( 'ui code... ignoring' );
+		return;
+	}
+	if ( !filename.match( /\.js$/ ) ) {
+		console.log( 'not a javascript file... ignoring' );
+		return;
+	}
+
+	console.log( `reloading ${main}` );
 	server.kill();
 	console.log( "Server stopped" );
 	server = cp.fork( main );

@@ -7,6 +7,7 @@
 		<title>ProPresenter Watcher</title>
 		<style media="screen">
 			body {
+				--body-width: 1200px;
 				margin: 10px auto;
 				width: 1200px;
 				background: black;
@@ -105,7 +106,10 @@
 				font-family: Muli;
 				font-weight: 600;
 				overflow-x:auto;
+				-ms-overflow-style: none;
+				scrollbar-width: none;
 			}
+			.box::-webkit-scrollbar {display:none;}
 			.current_slide .box {
 				border: 2px solid orange;
 			}
@@ -161,8 +165,10 @@
 				overflow: hidden;
 			}
 			#lower3 {
+				border:none;
 				--iw: 100%;
 				width: 100%;
+				height: calc(var(--body-width) * .14);
 			}
 
 			input[type=checkbox] { zoom: 2; }
@@ -205,7 +211,7 @@
 				<a class="btn" href="lower3.html">Lower Third</a>
 				<a class="btn" href="sd.html">Simple Stage Display</a>
 				<a class="btn" href="presenter.html">Presenter Notes</a>
-				<a class="btn" href="prompter.html">TelePrompter</a>
+				<a class="btn" href="presenter.html?mirror">TelePrompter</a>
 			</div>
 
 			<hr />

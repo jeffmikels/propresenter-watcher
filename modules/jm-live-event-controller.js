@@ -78,7 +78,7 @@ class JMLiveEventController extends Module {
 					if ( progress == 999 )
 						setTimeout( () => {
 							this.update( 0 );
-							Log( "automatically resetting event" );
+							this.log( "automatically resetting event" );
 						}, 60 * 1000 );
 				},
 			)

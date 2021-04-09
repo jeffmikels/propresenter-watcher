@@ -9,6 +9,11 @@
 		/>
 		<title>ProPresenter Watcher Lower Third</title>
 
+		<link rel="preconnect" href="https://fonts.gstatic.com">
+		<link
+			href="https://fonts.googleapis.com/css2?family=Mulish:ital,wght@0,200;0,500;0,800;0,900;1,200;1,500;1,800;1,900&display=swap"
+			rel="stylesheet">
+
 		<style media="screen">
 			html,
 			body {
@@ -16,11 +21,10 @@
 				width: 100%;
 				height: auto;
 				overflow: hidden;
-			}
-			body {
 				background: black;
 				color: ivory;
-				font-family: Muli, sans-serif;
+				font-family: Mulish, sans-serif;
+				font-weight: 800;
 				box-sizing: border-box;
 			}
 			#lower3 {
@@ -31,17 +35,15 @@
 				padding: 0px 1vw 0px 15vw; /* FOR LOGO ON LEFT  (SECOND ONE WINS) (default) */
 				overflow: hidden;
 				box-sizing:border-box;
-				
-				font-family: Muli;
 				font-weight: 800;
 				font-size: 60pt;
 				letter-spacing: -1px;
 				text-shadow: 2px 2px 9px rgba(0, 0, 0, 1);        /* BLACK SHADOW (SECOND ONE WINS) */
 				text-shadow:
-					1px  0px 2px rgba(255, 255, 255, .25),
-					0px  1px 2px rgba(255, 255, 255, .25),
-					-1px 0px 2px rgba(255, 255, 255, .25),
-					0px -1px 2px rgba(255, 255, 255, .25);  /* WHITE GLOW (SECOND ONE WINS) */
+					1px  0px 9px rgba(255, 255, 255, .25),
+					0px  1px 9px rgba(255, 255, 255, .25),
+					-1px 0px 9px rgba(255, 255, 255, .25),
+					0px -1px 9px rgba(255, 255, 255, .25);          /* WHITE GLOW (SECOND ONE WINS) */
 				-webkit-text-stroke: 0px black;
 				color: black;
 			}
@@ -50,27 +52,43 @@
 				top: 0;
 				left: 0;
 				width: 100%;
-				height: 14vw;
+				height: 14vw;           /* LOWER THIRD ASPECT RATIO IS 100/14 (7.14) */
 				object-fit:cover;
 			}
 			#lower3 #textwrapper {
+				transition: opacity 0.7s;
+				opacity: 0;
 				position: relative;
 				top: 50%;
 				transform: translateY(-50%);
 				line-height: 1;
 				white-space: pre-line;
 			}
+			#lower3 #textwrapper.showtext {
+				opacity: 1;
+			}
 			#lower3 #caption {
-				font-family: "Muli Black", Muli;
-				font-weight:900;
+				transition: all 0s;
+				transform: translateX(100%);
+				font-weight:700;
+				font-style: italic;
 				position:absolute;
-				top:0;
-				right: 0;
+				bottom:0px;
+				right: 0px;
+				box-sizing: border-box;
+				padding: 3px 10px 3px 18px;
+				background-color: black;
+				border-radius: 13px 0 0 0;
 				font-size: 14px;
 				line-height: 1em;
-/*				color:#98c6fe;*/
-/*				-webkit-text-stroke: 1px #98c6fe;*/
+				color:#bed2eb;
+				text-shadow: none;
+	/*				-webkit-text-stroke: 1px #98c6fe;*/
 				text-transform: uppercase;
+			}
+			#lower3.hascaption #caption {
+				transform: translateX(0%);
+				transition: all 1s;
 			}
 			span.blank {
 				color: #ffc552;
@@ -81,16 +99,31 @@
 				font-weight: 900;
 				letter-spacing: -2px;
 			}
+			.fade-enter-active, .fade-leave-active {
+				transition: opacity .5s;
+			}
+			.fade-enter, .fade-leave-to /* .fade-leave-active below version 2.1.8 */ {
+				opacity: 0;
+			}
+
+
 		</style>
 		<meta charset="UTF-8" />
 	</head>
 
 	<body>
 		<div id="app" :class="">
-			<div id="lower3" :class="{hascaption:caption}">
+			<div id="lower3" :class="{hascaption:caption && show_text}">
 				<img :src="image" alt="" />
-				<div id="caption" v-html="caption"></div>
-				<div id="textwrapper">
+				<div id="caption" :class="{showcaption:show_text && caption}" v-html="caption"></div>
+				<div id="textwrapper" :class="{showtext:show_text}">
+					<!-- this transition doesn't work yet because the text size gets recomputed on update -->
+					<!-- using the key forces this element to use enter/leave transitions when key changes -->
+					<!-- 
+						<transition name="-fade-" zmode="out-in">
+							<div id="text" :key="html" v-html="html"></div>
+						</transition>
+					 -->
 					<div id="text" v-html="html"></div>
 				</div>
 			</div>
@@ -110,14 +143,25 @@
 					text: "",
 					html: "",
 					caption: "",
-					image: "lower3.jpg"
+					image: "lower3.jpg",
+					show_text: true,
 				},
 				computed: {},
 				methods: {
 					getLower() {
 						ws.bettersend("lower3");
 					},
-
+					updateFrom(data) {
+						if ( data.html != '' )
+							this.html = data.html;
+						if ( data.text != '' )
+							this.text = data.text;
+						if ( data.caption != '' )
+							this.caption = data.caption;
+						if ( data.image != '' )
+							this.image = data.image;
+						this.show_text = ( data.html != '' || data.text != '' );
+					},
 					connect() {
 						this.connecting = true;
 						console.log("attempting to reconnect to watcher service");
@@ -133,16 +177,10 @@
 							console.log(`"${message}" message received`);
 							switch (message) {
 								case "lower3":
-									this.html = data.html;
-									this.text = data.text;
-									this.caption = data.caption;
-									this.image = data.image;
+									this.updateFrom(data);
 									break;
 								case "status":
-									this.html = data.lower3.html;
-									this.text = data.lower3.text;
-									this.caption = data.lower3.caption;
-									this.image = data.lower3.image;
+									this.updateFrom(data.lower3);
 									break;
 							}
 							console.log(message);

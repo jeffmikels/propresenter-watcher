@@ -244,7 +244,7 @@ possible endpoints are the following:
 /api/help ← return this text
 /api/status ← return current status
 /api/triggers ← returns a list of current triggers
-/api/toggle/trigger_id ← toggles the status of a trigger
+/api/toggle/[trigger_uuid] ← toggles the status of a trigger
 /api/toggle ← toggles the status of all trigger processing
 `;
 
@@ -537,22 +537,21 @@ function httpHandler( req, res ) {
 			output = JSON.stringify( triggerStatus() );
 		}
 
-
 		match = req.url.match( /\/api\/toggle\/?$/ );
 		if ( match ) {
 			allow_triggers = !allow_triggers;
 			output = JSON.stringify( triggerStatus() );
 		}
 
-		match = req.url.match( /\/api\/toggle\/(\d*)\/?$/ );
+		match = req.url.match( /\/api\/toggle\/([^\/]*)\/?$/ );
 		if ( match ) {
-			let id = +match[ 1 ];
-			if ( id < pro6_triggers.length && id >= 0 ) {
-				pro6_triggers[ id ].enabled = !pro6_triggers[ id ].enabled;
-			}
+			let uuid = match[ 1 ];
+			if ( uuid in configuredTriggersByUuid )
+				configuredTriggersByUuid[ uuid ].enabled = !configuredTriggersByUuid[ uuid ].enabled;
 			output = JSON.stringify( triggerStatus() );
 		}
 		res.end( output );
+
 	} else {
 		// does the request result in a real file?
 		let pathName = url.parse( req.url ).pathname;
