@@ -10,8 +10,8 @@ const config = {
 	// MIDI SETTINGS
 	MIDI_PORT: 4,
 
-	// LCC LIVE SETTINGS
-	LCC_LIVE_URL: "https://example.org:99999", // no final slash
+	// JM_APPS LIVE EVENT SETTINGS
+	JM_APPS_LIVE_URL: "https://example.org:99999", // no final slash
 
 	// VMIX SETTINGS
 	VMIX_HOST: "192.168.1.5:8088", // no final slash

@@ -8,23 +8,36 @@
 		<style media="screen">
 			body {
 				margin: 10px auto;
-				width: 900px;
+				width: 1200px;
 				background: black;
 				color: ivory;
 				font-family: Muli, sans-serif;
 				box-sizing: border-box;
 			}
-			a {
+			#nav {
+				padding: 5px 0;
+			}
+			a, button {
 				text-decoration: none;
 				font-weight: 900;
 				color: red;
 			}
-			a:hover {
+			a:hover, a.btn:hover, button.btn:hover {
 				color: white;
+				background: #400;
 			}
 			a:visited {
 				color: purple;
 			}
+			a.btn, button.btn {
+				display: inline-block;
+				padding: 4px 10px;
+				text-transform: uppercase;
+				background: #222;
+				border: 1px solid #777;
+				border-radius: 4px;
+			}
+			
 			#app {
 				float: left;
 				width: 100%;
@@ -39,19 +52,19 @@
 			.main {
 				box-sizing: border-box;
 				position: relative;
-				width: 580px;
+				width: 870px;
 				float: left;
 			}
 
 			.sidebar {
 				box-sizing: border-box;
 				position: relative;
-				width: 290px;
+				width: 300px;
 				float: right;
 			}
 
 			clock {
-				position: absolute;
+				position: fixed;
 				bottom: 10px;
 				right: 10px;
 				text-align: right;
@@ -91,6 +104,7 @@
 				font-size: 1.2em;
 				font-family: Muli;
 				font-weight: 600;
+				overflow-x:auto;
 			}
 			.current_slide .box {
 				border: 2px solid orange;
@@ -104,7 +118,7 @@
 			}
 
 			status {
-				position: absolute;
+				position: fixed;
 				bottom: 10px;
 				left: 10px;
 				color: white;
@@ -150,52 +164,72 @@
 				--iw: 100%;
 				width: 100%;
 			}
+
+			input[type=checkbox] { zoom: 2; }
+
+			li.trigger-box {
+				border: 2px solid #333;
+				font-size:1.1em;
+			}
+			li.trigger-box label { display: flex; align-items: center; }
+			li.trigger-box.bulk { background: #333; }
+			li.trigger-box small { font-size: .7em; }
+			li.trigger-box input, li.trigger-box button { margin:0 10px 0 5px; }
+			.trigger-title {font-size: 1.2em;}
+			.trigger-description {font-size:.8em;margin-bottom:10px;}
+			.trigger-meta {overflow-x: auto; flex-grow:10;}
 		</style>
 		<meta charset="UTF-8" />
 	</head>
 
 	<body>
 		<div id="app" :class="state">
-			<clock v-if="pro6_status.system_time">{{ pro6_status.system_time.text }}</clock>
+			<!-- STATUS BAR ITEMS -->
+			<clock v-if="pro_status.system_time">{{ pro_status.system_time.text }}</clock>
 			<status v-if="connected">
 				PP:
-				<span :class="{active: pro6_status.active, inactive: !pro6_status.active}">
-					{{ pro6_status.active ? "ACTIVE" : "INACTIVE" }}
+				<span :class="{active: pro_status.active, inactive: !pro_status.active}">
+					{{ pro_status.active ? "ACTIVE" : "INACTIVE" }}
 				</span>
-				| MIDI:
-				<span :class="{active: midi_status.connected, inactive: !midi_status.connected}">
-					{{ midi_status.connected ? midi_status.port.name : "NOT CONNECTED" }}
-				</span>
-				| VMIX: <span class="vmix">{{ vmix_status }}</span>
 			</status>
+
+			
 			<h1>
-				ProPresenter Watcher <small><a href="lower3.html">( open lower third )</a></small>
+				ProPresenter Master Control
 			</h1>
 
 			<iframe id="lower3" src="lower3.html"></iframe>
-			<a href="sd.html">Simple Stage Display 1</a>
-			<a href="presenter.html">Presenter Notes</a>
-			<a href="prompter.html">TelePrompter</a>
+
+			<!-- nav buttons -->
+			<div id="nav">
+				<a class="btn" href="lower3.html">Lower Third</a>
+				<a class="btn" href="sd.html">Simple Stage Display</a>
+				<a class="btn" href="presenter.html">Presenter Notes</a>
+				<a class="btn" href="prompter.html">TelePrompter</a>
+			</div>
 
 			<hr />
-			<div class="sidebar" v-if="pro6_status.slides">
-				<div class="current_slide" v-if="pro6_status.slides.current">
+
+			<!-- sidebar -->
+			<div class="sidebar" v-if="pro_status.slides">
+				<button class="btn" @click="prev">prev</button> <button class="btn" @click="next">next</button>
+				<div class="current_slide" v-if="pro_status.slides.current">
 					<h3>Current Slide</h3>
 					<div class="box">
-						{{ pro6_status.slides.current.text }}
-						<div class="note">{{ pro6_status.slides.current.notes.replace(/\n/,' &bull; ') }}</div>
+						{{ pro_status.slides.current.text }}
+						<div class="note">{{ pro_status.slides.current.notes.replace(/\n/,' &bull; ') }}</div>
 					</div>
 				</div>
-				<div class="next_slide" v-if="pro6_status.slides.next">
+				<div class="next_slide" v-if="pro_status.slides.next">
 					<h3>Next Slide</h3>
 					<div class="box">
-						{{ pro6_status.slides.next.text }}
-						<div class="note">{{ pro6_status.slides.next.notes.replace(/\n/,' &bull; ') }}</div>
+						{{ pro_status.slides.next.text }}
+						<div class="note">{{ pro_status.slides.next.notes.replace(/\n/,' &bull; ') }}</div>
 					</div>
 				</div>
-				<div class="timers" v-if="pro6_status.timers">
+				<div class="timers" v-if="pro_status.timers">
 					<h3>Timers</h3>
-					<div class="timer" v-for="timer in pro6_status.timers">
+					<div class="timer" v-for="timer in pro_status.timers">
 						<span class="small">{{ timer.uid }}</span>
 						<br />
 						{{ timer.text }} ({{ timer.seconds }}s)
@@ -203,53 +237,67 @@
 				</div>
 			</div>
 
+			<!-- COMPONENTS LIST -->
 			<div class="main">
-				<h3>Configuration</h3>
-				<ul>
-					<li>
-						<label class="text">ProPresenter Host: </label>
-						<input @change="update_config" v-model="config.PRO6_HOST" />
-					</li>
-					<li>
-						<label class="text">ProPresenter Stage Display PW: </label>
-						<input @change="update_config" v-model="config.PRO6_SD_PASSWORD" />
-					</li>
-					<li>
-						<label class="text">ProPresenter Control PW: </label>
-						<input @change="update_config" v-model="config.PRO6_CONTROL_PASSWORD" />
-					</li>
-					<li>
-						<label class="text">vMix Address (IP:Port): </label>
-						<input @change="update_config" v-model="config.VMIX_HOST" />
-					</li>
-					<li>
-						<label class="text">vMix Input for Lyrics </label>
-						<input @change="update_config" v-model="config.VMIX_LYRICS_INPUT" />
-					</li>
-					<li>
-						<label class="text">MIDI Output Port </label>
-						<select @change="update_midi" v-model="selected_port">
-							<option>-- SELECT MIDI PORT --</option>
-							<option v-for="port in midi_status.ports" :selected="port.id == selected_port" :value="port.id">{{ port.name }}</option>
-						</select>
-					</li>
-				</ul>
-				<h3>Triggers</h3>
-				<ul>
-					<li>
-						<label>
-							<input type="checkbox" v-model="allow_triggers" @change="update_allow_triggers" />
-							Triggers {{ triggerstatus }}
-						</label>
-					</li>
+				<div>
+					<button class="btn" @click="show_config = !show_config">{{show_config ? 'Hide' : 'Show'}} Controllers Config</button>
+					<button class="btn" @click="show_triggers = !show_triggers">{{show_triggers ? 'Hide' : 'Show'}} Triggers</button>
+				</div>
+				<div v-if="show_config">
+					<h3>Controllers Configuration</h3>
+					<div v-for="controller in controllers">
+						<h4>{{controller.niceName}}</h4>
+						<ul>
+							<li v-for="value, key in controller.config" v-if="key != 'triggers'">
+								<label class="text">{{key}}</label>
+								<input @change="update_config" v-model="value" />
+							</li>
+						</ul>
+					</div>
+				</div>
+				<div v-if="show_triggers">
+					<h3>Triggers</h3>
+					<ul>
+						<li>
+							<label>
+								<input type="checkbox" v-model="allow_triggers" @change="update_allow_triggers" />
+								Enable / Disable All Triggers ({{ triggerstatus }})
+							</label>
+						</li>
+					</ul>
 					<hr />
-					<li v-for="trigger in triggers">
-						<label>
-							<input :disabled="!allow_triggers" type="checkbox" @change="update_triggers" v-model="trigger.enabled" />
-							{{ trigger.name }}
-						</label>
-					</li>
-				</ul>
+					<ul v-for="controller in controllers">
+						<li class="trigger-box bulk">
+							<label>
+								<input :disabled="!allow_triggers" type="checkbox" @change="update_controller(controller)" v-model="controller.enabled" />
+								<div class="trigger-meta">
+									<div class="trigger-title" style="display:inline-block;vertical-align:middle;">
+										<h4>{{ controller.niceName }} <span v-if="controller.requiresInstance">({{ controller.instanceName }})</span> - {{controller.enabled ? 'Enabled' : 'Disabled'}}</h4>
+									</div>
+								</div>
+								<button v-if="controller.enabled" @click="expanded[controller.uuid] = !expanded[controller.uuid]" class="btn">{{expanded[controller.uuid] ? '-' : '+'}}</button>
+							</label>
+						</li>
+						<li v-if="controller.enabled && expanded[controller.uuid]" v-for="trigger in controller.triggers" class="trigger-box">
+							<label>
+								<input :disabled="!controller.enabled || !allow_triggers" type="checkbox" @change="update_trigger(trigger)" v-model="trigger.enabled" />
+								<div class="trigger-meta">
+									<div class="trigger-title" style="display:inline-block;vertical-align: middle;">
+										{{ trigger.parentName }}<br />[{{trigger.label}}]
+										<div class="trigger-description">{{trigger.description}}</div>
+										<h5>Arguments:</h5>
+										<div v-for="arg in trigger.args" class="trigger-arg">&lt;{{arg.name}}:{{arg.type}}&gt; ({{arg.description}})<br /><small>{{arg.help}}</small></div>
+										<h5>Examples:</h5>
+										<div class="trigger-example" v-for="example in trigger.examples">
+											<code>{{example}}</code>
+										</div>
+									</div>
+								</div>
+							</label>
+						</li>
+					</ul>
+				</div>
+
 				<div class="logtext">
 					{{ logtext }}
 				</div>
@@ -267,30 +315,24 @@
 			let app = new Vue({
 				el: "#app",
 				data: {
-					config: {},
-					triggers: {},
-					pro6_status: {},
-					vmix_status: "",
-					midi_status: {},
-					selected_port: null,
 					allow_triggers: true,
+					show_config: false,
+					show_triggers: false,
+					config: {},
+					expanded: {},
+					controllers: [],
+					pro_status: {}, // status of the propresenter master
 					status: "",
 					connected: false,
 					connecting: false,
 					logs: [],
 				},
 				computed: {
-					pro6host() {
-						return `${this.config.PRO6_HOST}:${this.config.PRO6_PORT}`;
-					},
-					vmixhost() {
-						return this.config.VMIX_HOST;
-					},
-					triggerstatus() {
-						return this.allow_triggers ? "Enabled" : "Disabled";
-					},
 					state() {
 						return this.connected ? "connected" : this.connecting ? "connecting" : "disconnected";
+					},
+					triggerstatus(){
+						return this.allow_triggers ? 'enabled':'disabled';
 					},
 					logtext() {
 						if (this.logs.length > 8) {
@@ -300,6 +342,9 @@
 					},
 				},
 				methods: {
+					disable_controller(controller) {
+						for (let t of controller.triggers) t.enabled = controller.enabled;
+					},
 					update_midi() {
 						ws.bettersend("update_midi", this.selected_port);
 					},
@@ -309,9 +354,14 @@
 					update_allow_triggers() {
 						ws.bettersend("toggle_allow_triggers", this.allow_triggers);
 					},
-					update_triggers() {
-						ws.bettersend("update_triggers", this.triggers);
+					update_controller(controller) {
+						ws.bettersend("update_controller", controller);
 					},
+					update_trigger( trigger ) {
+						ws.bettersend( "update_trigger", trigger );
+					},
+					next() { ws.bettersend( "next_slide" ) },
+					prev() { ws.bettersend( "prev_slide" ) },
 					log(s) {
 						console.log(s);
 
@@ -326,7 +376,7 @@
 
 					connect() {
 						this.connecting = true;
-						this.log("attempting to reconnect to watcher service");
+						this.log("attempting to reconnect to master control backend");
 
 						// connect the websocket
 						ws = new WebSocket(`ws://${document.location.host}`);
@@ -340,12 +390,16 @@
 							switch (message) {
 								case "status":
 									this.config = data.config;
-									this.triggers = data.triggers;
+									this.controllers = data.controllers;
+
 									this.allow_triggers = data.allow_triggers;
-									this.pro6_status = data.pro6_status;
-									this.vmix_status = data.vmix_status;
-									this.midi_status = data.midi_status;
-									if (this.midi_status.port != null) this.selected_port = this.midi_status.port.id;
+									
+									this.pro_status = data.pro_status;
+									if (Object.keys(this.expanded).length == 0) {
+										let newexp = {}
+										data.controllers.map(e=>newexp[e.uuid] = false);
+										this.expanded = newexp;
+									}
 									break;
 								case "vmix":
 									this.vmix_status = data;

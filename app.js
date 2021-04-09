@@ -8,21 +8,90 @@
 
 // general configuration
 const config = require( "./config.js" );
+const { markdown } = require( './helpers.js' );
+const { Module, ModuleTrigger, ModuleTriggerArg, GlobalModule } = require( './modules/module.js' );
 
-// modules
-const { Pro6Listener, Pro6Controller } = require( "./modules/pro6.js" );
-const { LiveEventController } = require( "./modules/live-event-controller.js" );
+
+// ----- MODULES AND TRIGGERS --------------
+
+// available modules
+// each module supports the same basic api:
+//    static supports multiple?
+//    static name
+//    static create(options)                      // creates a new instance of this class from options
+//    getInfo()                                   // reports instance id and trigger documentation
+//    registerTrigger( ModuleTrigger() )          // registers a trigger exposed by this module
+//    handleTrigger(tagname, args, onSuccess, onError)
+// if a module supports multiple instances, the module must declare it so,
+//
+// modules must maintain their own connection to whatever it is they control
+
+const globalController = new GlobalModule();
+
+// Everything begins with ProPresenter, so it should always be instantiated
+const { ProController } = require( "./modules/pro.js" );
+
+// Controller Modules for Known Products
+const { JMLiveEventController } = require( "./modules/jm-live-event-controller.js" );
 const { VmixController } = require( "./modules/vmix-controller.js" );
 const { CompanionController } = require( "./modules/companion-controller.js" );
-const { Midi } = require( "./modules/midi.js" );
-const { OnyxController } = require( "./modules/onyx.js" );
+const { MidiController } = require( "./modules/midi-controller.js" );
+const { OnyxController } = require( "./modules/onyx-controller.js" );
+// const { OBSController } = require( "./modules/obs-controller.js" );
 
-// const { WebSocketController } = require( "./modules/websocket.js" );
-// const { OBSController } = require( "./modules/obs.js" );
-// const { HTTPController } = require( "./modules/http.js" );
+// arbitrary controllers for unknown products that support standard protocols
+// const { SocketIOController } = require( './modules/socketio-controller.js' );
+// const { WebSocketController } = require( "./modules/websocket-controller.js" );
+// const { HTTPController } = require( "./modules/http-controller.js" );
+// const { TCPController } = require( "./modules/tcp-controller.js" );
+
+// put modules into various structures to make access easier
+
+const modulesByName = {}
+modulesByName[ ProController.name ] = ProController;
+modulesByName[ JMLiveEventController.name ] = JMLiveEventController;
+modulesByName[ VmixController.name ] = VmixController;
+modulesByName[ CompanionController.name ] = CompanionController;
+modulesByName[ MidiController.name ] = MidiController;
+modulesByName[ OnyxController.name ] = OnyxController;
+// modulesByName[ OBSController.name ] = OBSController;
+// modulesByName[ SocketIOController.name ] = SocketIOController;
+// modulesByName[ WebSocketController.name ] = WebSocketController;
+// modulesByName[ HTTPController.name ] = HTTPController;
+// modulesByName[ TCPController.name ] = TCPController;
+
+// this will keep a registration of all the enabled and configured controllers
+// each controller should expose its own commands and documentation
+const configuredControllers = [];
+
+// add a "Global" controller
+configuredControllers.push( globalController );
 
 
-// web logger allows logging to a web service
+// now, read the configuration file and create all expected controllers
+// controller keys in the config file must match the static Module name of the controller
+for ( let k of Object.keys( config.controllers ) ) {
+	if ( !k in modulesByName ) continue;
+	let controllerModule = modulesByName[ k ];
+	let coptions = config.controllers[ k ];
+	if ( Array.isArray( coptions ) ) {
+		for ( let instanceOptions of coptions ) {
+			configuredControllers.push( new controllerModule( instanceOptions ) )
+		}
+	} else {
+		configuredControllers.push( new controllerModule( coptions ) )
+	}
+}
+
+const configuredControllersByUuid = {}
+configuredControllers.forEach( e => configuredControllersByUuid[ e.uuid ] = e );
+
+// we now have a configured module for each of the controllers specified in the
+// configuration file. Each of them should have created their own instances by now
+// and each of them should manage their own lifecycle
+
+
+// ----- THE LOGGER SETTINGS ARE DIFFERENT ------
 let Log = console.log;
 if ( config.USEWEBLOG ) {
 	const WebLogger = require( "./modules/web-logger.js" );
@@ -33,492 +102,138 @@ if ( config.USEWEBLOG ) {
 	};
 }
 
-// LIVE EVENT API HANDLER
-let lec = new LiveEventController( config.LCC_LIVE_URL, 0 );
+// special triggers for custom logging
+globalController.triggers.push( new ModuleTrigger(
+	'log',
+	'sends a log event to the logger of the format: "LOGSTRING: timestamp"',
+	[ new ModuleTriggerArg( 'string', 'string', 'string to log', true ) ],
+	( _, s = '' ) => {
+		if ( s != null && s != '' ) s += ': '
+		Log( s + timestamp() )
+	}
+) );
 
-// VMIX API HANDLER
-let vmix = new VmixController( "http://" + config.VMIX_HOST );
-let vmix_lower3 = {
+
+// special triggers for lower3 computations
+globalController.triggers.push( new ModuleTrigger(
+	'l3',
+	'sets the lower third text',
+	[
+		new ModuleTriggerArg(
+			'markdown_text',
+			'string',
+			'a string to be processed as markdown',
+			false,
+		),
+	],
+	( _, markdown_text ) => {
+		Log( markdown_text );
+		lower3.text = markdown_text;
+		lower3.html = markdown( markdown_text );
+	},
+) );
+
+globalController.triggers.push( new ModuleTrigger(
+	'l3caption',
+	'sets the lower third caption text',
+	[
+		new ModuleTriggerArg( 'caption', 'string', 'stores data to a lower third caption field', true ),
+	],
+	( _, caption ) => {
+		lower3.caption = caption;
+	}
+) );
+
+// create data structures to make it easier to access
+// the triggers exposed by each controller
+const configuredTriggers = [];
+for ( let cm of configuredControllers ) {
+	for ( let trigger of cm.triggers ) {
+		configuredTriggers.push( trigger );
+	}
+}
+const configuredTriggersByUuid = {}
+configuredTriggers.forEach( e => configuredTriggersByUuid[ e.uuid ] = e );
+
+
+
+// --------------------------------
+// - ALL MODULES ARE NOW CONFIGURED
+// - MAIN STATE VARIABLES COME NEXT
+// --------------------------------
+
+let pro = ProController.master;
+let allow_triggers = true;
+
+let lower3 = {
 	text: "",
 	html: "",
 	caption: "",
 	image: config.LOWER3_IMAGE,
 };
 
-// COMPANION API HANDLER
-let companions = {};
-for ( let name of Object.keys( config.COMPANION_HOSTS ) ) {
-	companions[ name ] = new CompanionController( config.COMPANION_HOSTS[ name ] );
-}
+// TODO: CONVERT PRO NOTES TO USE NEW TRIGGERS
+// [sermon_start] => log[SERMON STARTING]
+// [sermon_end]   => log[SERMON ENDED]
 
-// MIDI HANDLER
-let midi = new Midi();
-if ( config.USEMIDI && config.MIDI_PORT ) midi.openPort( config.MIDI_PORT );
-
-// ONYX HANDLER
-let onyx;
-if ( config.USEONYX ) onyx = new OnyxController( config.ONYX_IP, config.ONYX_PORT );
-
-// global ProPresenterListener for future use;
-let pl;
-
-//
-//
-//
-//
-// (-- THIS IS WHERE THE MAGIC HAPPENS --)
-//
-//
-//
-//
-// TRIGGERS
-// triggers have the pattern
-// {
-//	name: 'Description of this trigger.',
-// 	type: 'timer|slides|systime',
-// 	test: function returning a boolean called with this data object,
-// 	callback: function to call if there was a match (argument is the proper data object),
-// }
-
-// TRIGGERS REGEX DOCUMENTATION
-// LIVE EVENTS:
-// [sermon_start]          ← used to flag the web-logger, timers, or other things
-// event[event_id]         ← requests control of an event
-// live[progress_integer]  ← sends progress to the event as an integer
-const sermon_start_pattern = /\[sermon_start\]/i;
-const live_event_pattern = /event\[(\d+)\]/i;
-const live_progress_pattern = /live\[(\d+)\]/i;
-
-// VMIX:
-// [novmix] ← if found on a slide, no vmix triggers will be processed for that slide
-const vmix_ignore_pattern = /\[novmix\]/i;
-
-// vmix[transition_type, [input name/number], [transition duration milliseconds]]
-// transition_type can be whatever transition vmix supports
-// second two arguments are optional
-// input defaults to whatever is set to Preview
-// transition defaults to 1000 milliseconds
-const vmix_trans_pattern = /vmix\[(\w+)\s*(?:,\s*(.+?))?\s*(?:,\s*(\d+))?\s*\]/gi;
-
-// vmixcut[input name/number]               ← shortcut to cut to an input (required)
-const vmix_cut_pattern = /vmixcut\[(.+?)\s*\]/gi;
-
-// vmixfade[input name/number, duration]    ← shortcut to fade to an input (duration optional)
-const vmix_fade_pattern = /vmixfade\[(.+?)\s*(?:,\s*(\d+))?\s*\]/gi;
-
-// vmixtext[input name/number, [selected name/index], [textoverride]]
-// puts the current slide body text (or the textoverride) into the specified text box
-// of the specified input, selected name/index defaults to 0
-const vmix_text_pattern = /vmixtext\[(.+?)\s*(?:,\s*(.+?))?\s*(?:,\s*(.+?))?\s*\]/gi;
-
-// vmixoverlay[overlay number, [In|Out|On|Off], [input number]]
-// sets an input as an overlay
-// overlay is required
-// type defaults to null which toggles the overlay using the default transition
-// input defaults to the currently selected input (Preview)
-const vmix_overlay_pattern = /vmixoverlay\[(.+?)\s*(?:,\s*(.+?))?\s*(?:,\s*(.+?))?\s*\]/gi;
-
-// manually set the vmix lower3 html.
-const vmix_lower3_pattern = /\[l3\](.*?)\[\/l3\]/gis;
-const vmix_lower3caption_pattern = /\[l3caption\](.*?)\[\/l3caption\]/gis;
-
-// start streaming
-const vmix_streaming_pattern = /vmixstream\[([10]|on|off)\]/gi;
-
-// For advanced vMix control, put vMix API commands in JSON text between vmix tags
-// [vmix]
-// {
-// 	"Function": "Slide",
-// 	"Duration": 3000
-// }
-// [/vmix]
-const vmix_advanced = /\[vmix\](.*?)\[\/vmix\]/gis;
-
-// NOTE: vMix API Documentation is here:
-// https://www.vmix.com/help21/index.htm?DeveloperAPI.html
-// https://www.vmix.com/help19/index.htm?ShortcutFunctionReference.html
-// NOTE: multiple vmix triggers of each type can be handled per slide.
-
-// COMPANION:
-// companionbutton[page number, button/bank number]
-const companion_button_pattern = /companionbutton\[\s*(.+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\]/gi;
-
-// companionpage[page number, surface id]
-const companion_page_pattern = /companionpage\[\s*(.+)\s*,\s*(\d+)\s*,\s*(.+)\s*\]/gi;
-
-// MIDI:
-// note[note,[velocity],[channel]]
-// channel defaults to 0
-// velocity defaults to 127
-const midi_note_pattern = /note\[(\d+)\s*(?:,\s*(\d+?))?\s*(?:,\s*(\d+))?\s*\]/gi;
-
-// pc[program number, [channel]]
-// program change, channel defaults to 0
-const midi_pc_pattern = /pc\[(\d+)\s*(?:,\s*(\d+?))?\s*\]/gi;
-
-// cc[controller (0-127), value, [channel]]
-// channel defaults to 0
-// both are required
-// note that controllers 120-127 are reserved for special channel mode messages
-// 120,0 = all sound off
-// 121,0 = reset controllers
-// 122,0 = local control off
-// 122,127 = local control on
-// 123,0 = all notes off
-// 124,0 = omni mode off
-// 125,0 = omni mode on
-// 126,c = mono mode where c is number of channels
-// 127,0 = poly mode
-const midi_cc_pattern = /cc\[(\d+)\s*(?:,\s*(\d+?))?\s*(?:,\s*(\d+))?\s*\]/gi;
-
-// mtc[initial timecode string, fps]
-// timecode string should be of the format HH:MM:SS:FF where FF is the number of the frame, zero indexed
-// fps is frames per second... defaults to 24
-// mtc[] will turn off the timecode generator
-const midi_mtc_pattern = /mtc\[(?:(.+?))?\s*(?:,\s*(\d+))?\s*\]/gi;
-
-// onyx patterns
-const onyx_go_pattern = /onyxgo\[(.+?)\s*(?:,\s*(\d+))?\s*\]/gi;
-const onyx_release_pattern = /onyxrelease\[(.+?)\s*(?:,\s*(\d+))?\s*\]/gi;
-
-let allow_triggers = true;
-const pro6_triggers = [
-	{
-		name: "Testing Timer Trigger",
-		type: "timer",
-		enabled: true,
-		test: ( d ) => d.uid == "47E8B48C-0D61-4EFC-9517-BF9FB894C8E2",
-		callback: ( d ) => {
-			Log( `COUNTDOWN TIMER TRIGGERED:` );
-			Log( d );
-		},
-	},
-	{
-		name: "SlideNotes MIDI Checker",
-		type: "slides",
-		enabled: true,
-		test: () => config.USEMIDI,
-		callback: ( slides ) => {
-			if ( !midi.connected ) {
-				console.log( "MIDI triggered, but no MIDI port is connected" );
-			}
-
-			// check current slide notes for midi note data
-			for ( let match of findall( midi_note_pattern, slides.current.notes ) ) {
-				let note = match[ 1 ];
-				let vel = match[ 2 ] || 127;
-				let chan = match[ 3 ] || 0;
-				// the "hit" function will turn a note on and then off again after 100ms
-				midi.hit( note, vel, chan );
-			}
-
-			// check current slide notes for midi program data
-			for ( let match of findall( midi_pc_pattern, slides.current.notes ) ) {
-				let prog = match[ 1 ];
-				let chan = match[ 2 ] || 0;
-				midi.program( prog, chan );
-			}
-
-			// check current slide notes for midi control change data
-			for ( let match of findall( midi_cc_pattern, slides.current.notes ) ) {
-				let controller = match[ 1 ];
-				let val = match[ 2 ] || 127;
-				let chan = match[ 3 ] || 0;
-				midi.control( controller, val, chan );
-			}
-
-			// check current slide notes for midi control change data
-			for ( let match of findall( midi_mtc_pattern, slides.current.notes ) ) {
-				let timecode = match[ 1 ];
-				let fps = match[ 2 ] || 24;
-				if ( timecode ) midi.mtcStart( timecode, fps );
-				else midi.mtcStop();
-			}
-		},
-	},
-	{
-		name: "SlideNotes Sermon Start Checker",
-		type: "slides",
-		enabled: true,
-		test: () => true,
-		callback: ( slides ) => {
-			let match;
-
-			// check current notes for live event data
-			match = slides.current.notes.match( sermon_start_pattern );
-			if ( match ) {
-				let now = new Date();
-				Log( "SERMON STARTING: " + timestamp() );
-			}
-		},
-	},
-	{
-		name: "SlideNotes Live Event Checker",
-		type: "slides",
-		enabled: true,
-		test: () => true,
-		callback: ( slides ) => {
-			let match;
-
-			// check current notes for live event data
-			match = slides.current.notes.match( live_event_pattern );
-			if ( match ) {
-				lec.control( match[ 1 ] );
-				let logstring = "LIVE EVENT CONTROL: event " + match[ 1 ];
-				Log( logstring );
-			}
-
-			match = slides.current.notes.match( live_progress_pattern );
-			if ( match ) {
-				let progress = match[ 1 ];
-				lec.update( progress );
-				let logstring = `LIVE EVENT UPDATE: event ${lec.eid} progress ${progress}`;
-				Log( logstring );
-				if ( progress == 999 )
-					setTimeout( () => {
-						lec.update( 0 );
-						Log( "automatically resetting event" );
-					}, 60 * 1000 );
-			}
-		},
-	},
-	{
-		name: `vMix Lyrics Handler (slide text => input ${config.VMIX_LYRICS_INPUT})`,
-		type: "slides",
-		enabled: true,
-		test: () => true,
-		callback: ( slides ) => {
-			// check current notes for novmix tag
-			let match;
-			match = slides.current.notes.match( vmix_ignore_pattern );
-			if ( match ) {
-				Log( "[novmix] found... ignoring vmix commands" );
-				return;
-			}
-			vmix.setInputText( config.VMIX_LYRICS_INPUT, slides.current.text );
-		},
-	},
-	{
-		name: "vMix Automation Checker (transitions, overlays, text, streaming, advanced)",
-		type: "slides",
-		enabled: true,
-		test: () => true,
-		callback: ( slides ) => {
-			// check current notes for novmix tag
-			let match;
-			match = slides.current.notes.match( vmix_ignore_pattern );
-			if ( match ) {
-				Log( "[novmix] found... ignoring vmix commands" );
-				return;
-			}
-
-			// fade trigger
-			match = true;
-			while ( match ) {
-				match = vmix_fade_pattern.exec( slides.current.notes );
-				if ( match ) {
-					Log( `vmix match: ${match[ 0 ]}` );
-					let duration = 1000;
-					if ( match[ 2 ] ) duration = +match[ 2 ];
-					vmix.fadeToInput( match[ 1 ], duration );
-				}
-			}
-
-			// cut trigger
-			match = true;
-			while ( match ) {
-				match = vmix_cut_pattern.exec( slides.current.notes );
-				if ( match ) {
-					Log( `vmix match: ${match[ 0 ]}` );
-					vmix.cutToInput( match[ 1 ] );
-				}
-			}
-
-			// generic transition trigger
-			match = true;
-			while ( match ) {
-				match = vmix_trans_pattern.exec( slides.current.notes );
-				if ( match ) {
-					Log( `vmix match: ${match[ 0 ]}` );
-					let type = match[ 1 ].toLowerCase();
-					type = type.charAt( 0 ).toUpperCase() + type.slice( 1 );
-					let input = null;
-					if ( match[ 2 ] ) input = match[ 2 ];
-					let duration = 1000;
-					if ( match[ 3 ] ) duration = +match[ 3 ];
-					let options = {
-						Function: type,
-						Duration: duration,
-					};
-					if ( input ) options.Input = input;
-					vmix.api( options );
-				}
-			}
-
-			// overlay trigger
-			match = true;
-			while ( match ) {
-				match = vmix_overlay_pattern.exec( slides.current.notes );
-				if ( match ) {
-					Log( `vmix match: ${match[ 0 ]}` );
-					let overlay = match[ 1 ];
-					let type = match[ 2 ] ? match[ 2 ] : null;
-					let input = match[ 3 ] ? match[ 3 ] : null;
-					vmix.setOverlay( overlay, type, input );
-				}
-			}
-
-			// text trigger
-			match = true;
-			while ( match ) {
-				match = vmix_text_pattern.exec( slides.current.notes );
-				if ( match ) {
-					Log( `vmix match: ${match[ 0 ]}` );
-					let selected = 0;
-					if ( match[ 2 ] ) selected = match[ 2 ];
-					let realtext = slides.current.text;
-					if ( match[ 3 ] ) realtext = match[ 3 ];
-					if ( !used_override ) {
-						vmix_lower3.text = realtext;
-						vmix_lower3.html = realtext;
-					}
-					vmix.setInputText( match[ 1 ], realtext, selected );
-				}
-			}
-
-			// streaming trigger
-			match = true;
-			while ( match ) {
-				match = vmix_streaming_pattern.exec( slides.current.notes );
-				if ( match ) {
-					Log( `vmix match: ${match[ 0 ]}` );
-					let onoff = match[ 1 ];
-					if ( onoff == "on" || onoff == "1" ) vmix.triggerStream( true );
-					else vmix.triggerStream( false );
-				}
-			}
-
-			// allow for advanced vmix commands
-			match = true;
-			while ( match ) {
-				match = vmix_advanced.exec( slides.current.notes );
-				if ( match && match[ 1 ] ) {
-					Log( `vmix match: ${match[ 0 ]}` );
-					let options = JSON.parse( match[ 1 ] );
-					if ( options ) vmix.api( options );
-				}
-			}
-		},
-	},
-	{
-		name: `vMix Lower Thirds Checker `,
-		type: "slides",
-		enabled: true,
-		test: () => true,
-		callback: ( slides ) => {
-			// check current notes for novmix tag
-			let match;
-			match = slides.current.notes.match( vmix_ignore_pattern );
-			if ( match ) {
-				Log( "[novmix] found... ignoring vmix commands" );
-				return;
-			}
-
-			// set default lower3 text always
-			vmix_lower3.text = slides.current.text.trim();
-			vmix_lower3.html = markdown( slides.current.text.trim() );
-			vmix_lower3.caption = ''
+// need to create pluggable triggers for other propresenter states
+// need to create plugin system for additional modules
 
 
-			match = true;
-			let used_override = false;
-			while ( match ) {
-				match = vmix_lower3_pattern.exec( slides.current.notes );
-				if ( match ) {
-					// console.log(match);
-					used_override = true;
-					Log( `vmix lower3 override: ${match[ 0 ]}` );
-					vmix_lower3.text = match[ 1 ].trim();
-					vmix_lower3.html = markdown( match[ 1 ].trim() );
-				}
-			}
+// ----- PRO PRESENTER LISTENERS -----
+pro.on( 'sysupdate', ( e ) => {
+	Log( e );
+	if ( allow_triggers )
+		fireTriggers( '~sysupdate~', [], pro );
+} );
 
-			match = true;
-			while ( match ) {
-				match = vmix_lower3caption_pattern.exec( slides.current.notes );
-				if ( match ) {
-					// console.log(match);
-					Log( `vmix lower3 caption: ${match[ 0 ]}` );
-					vmix_lower3.caption = markdown( match[ 1 ].trim() );
-				}
-			}
-		},
-	},
-	{
-		name: "Onyx Notes Checker",
-		type: "slides",
-		enabled: true,
-		test: () => true,
-		callback: ( slides ) => {
-			let match;
+pro.on( 'timersupdate', ( e ) => {
+	Log( e );
+	if ( e.uid == "47E8B48C-0D61-4EFC-9517-BF9FB894C8E2" ) {
+		Log( `COUNTDOWN TIMER TRIGGERED:` );
+		Log( e );
+	}
+	if ( allow_triggers )
+		fireTriggers( '~timersupdate~', [], pro );
+} );
 
-			match = true;
-			while ( match ) {
-				match = onyx_go_pattern.exec( slides.current.notes );
-				if ( match ) {
-					Log( `onyx match: ${match[ 0 ]}` );
-					let cuelist = match[ 1 ];
-					let cue = match[ 2 ] ? match[ 2 ] : null;
-					onyx.goCuelist( cuelist, cue );
-				}
-			}
+pro.on( 'slideupdate', ( data ) => {
+	Log( data );
+	console.log( "--------- PRO SLIDE UPDATE -------------" );
+	console.log( data );
+	broadcast( "proupdate", data );
 
-			match = true;
-			while ( match ) {
-				match = onyx_release_pattern.exec( slides.current.notes );
-				if ( match ) {
-					Log( `onyx match: ${match[ 0 ]}` );
-					let cuelist = match[ 1 ];
-					let cue = match[ 2 ] ? match[ 2 ] : null;
-					onyx.releaseCuelist( cuelist, cue );
-				}
-			}
-		},
-	},
-	{
-		name: "Companion Notes Checker",
-		type: "slides",
-		enabled: true,
-		test: () => true,
-		callback: ( slides ) => {
-			let match = true;
-			while ( match ) {
-				match = companion_button_pattern.exec( slides.current.notes );
-				if ( match && match[ 1 ] && match[ 2 ] && match[ 3 ] ) {
-					let host = match[ 1 ];
-					console.log( host );
-					Log( `companion button press match: ${match[ 0 ]}` );
-					companions[ host ].buttonPress( match[ 2 ], match[ 3 ] );
-				}
-			}
+	// always update the lower3
+	// later triggers might override this
+	lower3.text = pro.slides.current.text;
+	lower3.html = markdown( pro.slides.current.text );
+	lower3.caption = '';
 
-			match = true;
-			while ( match ) {
-				match = companion_page_pattern.exec( slides.current.notes );
-				if ( match && match[ 1 ] && match[ 2 ] && match[ 3 ] ) {
-					let host = match[ 1 ];
-					console.log( host );
-					Log( `companion page select match: ${match[ 0 ]}` );
-					companions[ host ].pageSelect( match[ 2 ], match[ 3 ] );
-				}
-			}
-		},
-	},
-];
+	let foundTags = parseNotes( pro.slides.current.notes );
+	Log( foundTags )
 
-//
-// NO NEED TO EDIT BELOW HERE
-//
+	// for each found tag, fire the matching triggers
+	let used = false;
+	if ( allow_triggers ) {
+		for ( let { tag, args } of foundTags ) {
+			used = fireTriggers( tag, args, pro ) || used;
+		}
+		used = fireTriggers( '~slideupdate~', [], pro ) || used;
+
+		if ( !used ) {
+			console.log( "No triggers configured for this data:" );
+			console.log( data );
+		}
+	} else {
+		console.log( "ProPresenter Update, but triggers are disabled." );
+	}
+	console.log( "-----------------------------------" );
+
+	broadcast( "status", getStatus() );
+} );
+
+
+
 //  ---- UI SERVER CODE ---
 const fs = require( "fs" );
 const http = require( "http" );
@@ -527,6 +242,7 @@ const WebSocket = require( "ws" );
 const help = `
 possible endpoints are the following:
 /api/help ← return this text
+/api/status ← return current status
 /api/triggers ← returns a list of current triggers
 /api/toggle/trigger_id ← toggles the status of a trigger
 /api/toggle ← toggles the status of all trigger processing
@@ -544,7 +260,10 @@ wss.on( "connection", function connection( ws ) {
 	ws.isAlive = true;
 
 	ws.bettersend = function ( message = "", data = {} ) {
-		ws.send( JSON.stringify( { message, data } ) );
+		let tosend = JSON.stringify( { message, data } );
+		console.log( 'sending:' );
+		console.log( tosend );
+		ws.send( tosend );
 	};
 
 	ws.on( "message", function incoming( raw_message ) {
@@ -552,15 +271,13 @@ wss.on( "connection", function connection( ws ) {
 		// each "data" will be a JSON encoded dictionary
 		// like this:
 		// {'message': [string message], 'data': [submitted data]}
-		console.log( "received: message" );
+		console.log( "received message from frontend" );
 		console.log( raw_message );
 
 		var json = JSON.parse( raw_message );
 		var message = json.message;
 		var data = json.data;
-		vmix.onupdate = ( s ) => {
-			broadcast( "vmix", vmix.lastmessage );
-		};
+
 		switch ( message ) {
 			case "echo":
 				broadcast( "echo", data );
@@ -577,20 +294,45 @@ wss.on( "connection", function connection( ws ) {
 				for ( let key of Object.keys( config ) ) {
 					if ( config[ key ] != data[ key ] ) config[ key ] = data[ key ];
 				}
-				if ( pl ) {
-					pl.host = config.PRO6_HOST;
-					pl.password = config.PRO6_SD_PASSWORD;
-					if ( pl.connected ) pl.ws.close();
-					pl.connect();
+				if ( pro ) {
+					pro.host = config.controllers.pro.host;
+					pro.port = config.controllers.pro.port;
+					pro.password = config.controllers.pro.password;
+					if ( pro.connected ) pro.ws.close();
+					pro.connect();
 				}
 				broadcast( "status", getStatus() );
 				break;
-			case "update_triggers":
-				console.log( "updating triggers" );
-				for ( let i = 0; i < data.length; i++ ) {
-					pro6_triggers[ i ].enabled = data[ i ].enabled;
+			case "update_controller":
+				console.log( "updating controller status" );
+				Log( data );
+				let c = data;
+				let uuid = c.uuid;
+				if ( uuid in configuredControllersByUuid ) {
+					let controller = configuredControllersByUuid[ uuid ];
+					controller.enabled = c.enabled;
+					for ( let t of c.triggers ) {
+						if ( t.uuid in configuredTriggersByUuid ) {
+							configuredTriggersByUuid[ t.uuid ].enabled = t.enabled;
+						}
+					}
 				}
 				broadcast( "status", getStatus() );
+				break;
+			case "update_trigger":
+				console.log( "updating trigger status" );
+				Log( data );
+				let t = data;
+				if ( t.uuid in configuredTriggersByUuid ) {
+					configuredTriggersByUuid[ t.uuid ].enabled = t.enabled;
+				}
+				broadcast( "status", getStatus() );
+				break;
+			case 'next_slide':
+				pro.remote.next();
+				break;
+			case 'prev_slide':
+				pro.remote.prev();
 				break;
 			case "update_midi":
 				console.log( "selecting new MIDI port" );
@@ -614,54 +356,6 @@ wss.on( "connection", function connection( ws ) {
 // 	});
 // }, 30000);
 
-// finally, initialize the ProPresenter Connection
-// setup ProPresenter Listener
-pl = new Pro6Listener( config.PRO6_HOST, config.PRO6_SD_PASSWORD, {
-	onsysupdate: ( e ) => {
-		// console.log(e);
-	},
-	onslideupdate: ( e ) => {
-		// console.log(e);
-	},
-	ontimersupdate: ( e ) => {
-		// console.log(e);
-	},
-	onupdate: ( data, pro6 ) => {
-		// console.log("SYSTEM: ");
-		// console.log(pro6.system_time);
-		// console.log("TIMERS: ");
-		// console.log(pro6.timers);
-		// console.log("SLIDES: ");
-		// console.log(pro6.slides);
-
-		console.log( "--------- PRO6 UPDATE -------------" );
-		console.log( data );
-		broadcast( "pro6update", data );
-
-		// process triggers
-		let used = false;
-		if ( allow_triggers ) {
-			for ( let trigger of pro6_triggers ) {
-				if ( trigger.enabled && trigger.type == data.type && trigger.test( data.data ) ) {
-					console.log( `TRIGGER: ${trigger.name}` );
-					trigger.callback( data.data );
-					used = true;
-				}
-			}
-			if ( !used ) {
-				console.log( "No triggers configured, for this data:" );
-				console.log( data );
-			}
-		} else {
-			console.log( "ProPresenter Update, but triggers are disabled." );
-			// console.log(data);
-		}
-		console.log( "-----------------------------------" );
-
-		broadcast( "status", getStatus() );
-	},
-} );
-
 // and start the ui server
 console.log( `
 |
@@ -674,19 +368,18 @@ server.listen( config.UI_SERVER_PORT );
 // OTHER FUNCTIONS
 function noop() { }
 function getStatus() {
-	if ( vmix_lower3.text == "" && pl.slides.current.text != "" ) {
-		vmix_lower3.text = pl.slides.current.text;
-		vmix_lower3.html = pl.slides.current.text;
-		vmix_lower3.caption = pl.slides.current.caption;
+	if ( lower3.text == "" && pro.slides.current.text != "" ) {
+		lower3.text = pro.slides.current.text;
+		lower3.html = pro.slides.current.text;
+		lower3.caption = pro.slides.current.caption;
 	}
 	return {
 		config,
 		allow_triggers,
-		triggers: pro6_triggers,
-		pro6_status: pl.status(),
-		vmix_status: vmix.lastmessage,
-		midi_status: midi.status(),
-		lower3: vmix_lower3,
+		controllers: configuredControllers.map( e => e.getInfo() ),
+		triggers: configuredTriggers.map( e => e.doc() ),
+		pro_status: pro.status(),
+		lower3,
 	};
 }
 function broadcast( message, data ) {
@@ -696,18 +389,125 @@ function broadcast( message, data ) {
 }
 function triggerStatus() {
 	let retval = { allow_triggers, triggers: [] };
-	for ( let i = 0; i < pro6_triggers.length; i++ ) {
-		let t = pro6_triggers[ i ];
+	for ( let i = 0; i < configuredTriggers.length; i++ ) {
+		let t = configuredTriggers[ i ];
 		let o = {
-			name: t.name,
-			description: t.description,
-			enabled: t.enabled,
+			doc: t.doc(),
 			id: i,
 		};
 		retval.triggers.push( o );
 	}
 	return retval;
 }
+function fireTriggers( tagname, args = [], proInstance ) {
+	let used = false;
+	configuredTriggers.forEach( t => {
+		if ( t.tagname == tagname ) {
+			console.log( `TRIGGER: ${tagname}` );
+			Log( t.doc() );
+			used = t.fireIfEnabled( args, proInstance ) || used;
+		}
+	} );
+	return used;
+}
+
+function makeTag( tag = '', type = 'short', args = [] ) {
+	return { tag, type, args }
+}
+
+// takes a string and looks for all
+// trigger codes of the formats:
+//   [tag]content[/tag]
+//   tag[arg1,arg2,arg3]
+function parseNotes( s = '' ) {
+	let retval = [];
+	const longcode = /\[([^\s]+)\](.*?)\[\/\1\]/gis;
+
+	for ( let found of findall( longcode, s ) ) {
+		s = s.replace( found[ 0 ], '' );
+		retval.push( makeTag( found[ 1 ], 'long', [ found[ 2 ] ] ) )
+	}
+
+	// because we want to support arbitrary strings in the shortcodes
+	// they require a stream parser.
+	let chars = s;
+	let acc = [];
+	let tag = '';
+	let args = [];
+	let in_args = false;
+	let in_delimited_string = false;
+	let delimiters = /(['"`])/;
+	let delimiter = "";
+	for ( let i = 0; i < chars.length; i++ ) {
+		let char = chars[ i ];
+		let m;
+		if ( in_args ) {
+			if ( in_delimited_string ) {
+				if ( char == delimiter ) {
+					in_delimited_string = false;
+					let accumulated = acc.join( '' );
+					accumulated = accumulated.replace( '\\n', '\n' );
+					accumulated = accumulated.replace( '\\r', '\r' );
+					accumulated = accumulated.replace( '\\t', '\t' );
+					args.push( accumulated );
+					acc = [];
+					continue;
+				}
+				acc.push( char );
+				continue;
+			}
+
+			m = char.match( delimiters );
+			if ( m ) {
+				delimiter = m[ 1 ];
+				in_delimited_string = true;
+				continue;
+			}
+
+			if ( char == ',' ) {
+				args.push( acc.join( '' ).trim() );
+				acc = [];
+				continue;
+			}
+
+			if ( char == ']' ) {
+				let leftover = acc.join( '' ).trim()
+				acc = [];
+				if ( leftover.length > 0 ) {
+					args.push( leftover );
+				}
+				retval.push( makeTag( tag, 'short', args ) );
+				in_args = false;
+				args = [];
+				tag = '';
+				continue;
+			}
+
+			acc.push( char );
+			continue;
+		}
+
+		if ( char == '[' ) {
+			if ( acc.length > 0 ) {
+				tag = acc.join( '' );
+				acc = [];
+				in_args = true;
+				continue;
+			}
+		}
+
+		// whitespace resets the accumulator outside of a tag or args list
+		m = char.match( /\s/ );
+		if ( m ) {
+			acc = [];
+			continue;
+		}
+
+		acc.push( char );
+	}
+	return retval;
+}
+
 
 function httpHandler( req, res ) {
 	// console.log(req);
@@ -725,11 +525,18 @@ function httpHandler( req, res ) {
 			res.writeHead( 200, { "Content-type": "application/json;charset=UTF-8" } );
 		}
 
+		// get status
+		match = req.url.match( /\/api\/status\/?$/ );
+		if ( match ) {
+			output = JSON.stringify( getStatus() );
+		}
+
 		// get all triggers
 		match = req.url.match( /\/api\/triggers\/?$/ );
 		if ( match ) {
 			output = JSON.stringify( triggerStatus() );
 		}
+
 
 		match = req.url.match( /\/api\/toggle\/?$/ );
 		if ( match ) {
@@ -768,10 +575,6 @@ function httpHandler( req, res ) {
 	}
 }
 
-function markdown( s ) {
-	s = s.replace( /_(.*?)_/g, `<span class="blank">$1</span>` );
-	return s;
-}
 
 function findall( regex, subject ) {
 	let matches = [];

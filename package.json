@@ -1,5 +1,5 @@
 {
-	"name": "propresenter-watcher",
+	"name": "propresenter-master-control",
 	"version": "1.0.0",
 	"description": "Watches an active ProPresenter instance using the StageDisplay API and runs commands based on ProPresenter events.",
 	"main": "app.js",
