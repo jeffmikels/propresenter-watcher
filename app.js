@@ -37,7 +37,7 @@ const { VmixController } = require( "./modules/vmix-controller.js" );
 const { CompanionController } = require( "./modules/companion-controller.js" );
 const { MidiController } = require( "./modules/midi-controller.js" );
 const { OnyxController } = require( "./modules/onyx-controller.js" );
-// const { OBSController } = require( "./modules/obs-controller.js" );
+const { OBSController } = require( "./modules/obs-controller.js" );
 
 // arbitrary controllers for unknown products that support standard protocols
 // const { SocketIOController } = require( './modules/socketio-controller.js' );
@@ -54,7 +54,7 @@ modulesByName[ VmixController.name ] = VmixController;
 modulesByName[ CompanionController.name ] = CompanionController;
 modulesByName[ MidiController.name ] = MidiController;
 modulesByName[ OnyxController.name ] = OnyxController;
-// modulesByName[ OBSController.name ] = OBSController;
+modulesByName[ OBSController.name ] = OBSController;
 // modulesByName[ SocketIOController.name ] = SocketIOController;
 // modulesByName[ WebSocketController.name ] = WebSocketController;
 // modulesByName[ HTTPController.name ] = HTTPController;

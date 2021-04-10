@@ -12,6 +12,7 @@
 		"got": "^9.6.0",
 		"isomorphic-ws": "^4.0.1",
 		"midi": "^1.0.0",
+		"obs-websocket-js": "^4.0.2",
 		"socket.io": "^2.2.0",
 		"telnet-client": "^1.2.4",
 		"ws": "^7.1.2"
