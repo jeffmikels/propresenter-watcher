@@ -56,6 +56,7 @@ class Module extends EventEmitter {
 		}
 	}
 
+	log( s ) { this.emit( 'log', s ) }
 
 	// ModuleTrigger( tagname, description, args, callback )
 	registerTrigger( moduleTrigger ) {
@@ -103,7 +104,6 @@ class Module extends EventEmitter {
 	// to handle propresenter updates, but only if a trigger
 	// cannot be configured to do what you need.
 	handleProUpdate( updateType, pro ) { }
-
 }
 
 class ModuleTrigger {
@@ -114,18 +114,18 @@ class ModuleTrigger {
 		this.description = description;
 		this.args = args;
 		this.callback = callback;
-		this.allow_long_tag = this.args.length == 1;
+		this.allow_long_tag = this.args.length == 1 && ( this.args[ 0 ].type.match( /string|json/ ) );
 	}
 
 	examples() {
 		if ( this.tagname.match( /^~.+~$/ ) ) return [];
 		let examples = [];
-		let exampleArgValues = this.args.map( a => a.example );
 		let exampleArgNames = this.args.map( a => a.typed_name );
+		let exampleArgValues = this.args.map( a => a.example );
 		examples.push( `${this.tagname}[${exampleArgNames.join( ',' )}]` )
 		if ( this.args.length > 0 ) examples.push( `${this.tagname}[${exampleArgValues.join( ',' )}]` )
 		if ( this.allow_long_tag ) {
-			examples.push( `[${this.tagname}]${exampleArgNames[ 0 ]}[/${this.tagname}]` );
+			examples.push( `[${this.tagname}]\nYou can put anything here ( < > 😎 , ' ").\n[/${this.tagname}]` );
 		}
 		return examples;
 	}
@@ -143,8 +143,10 @@ class ModuleTrigger {
 			parentName: this.parent?.niceName ?? null,
 			tagname: this.tagname,
 			description: this.description,
+			extrahelp: this.allow_long_tag ? 'This trigger can make use of the "long tag" format (see final example below). Tags in this format allow you to use any characters you want, including whitespace, commas, quotation marks, and even emojis. The outermost whitespace will be stripped away, but interior whitespace will be preserved and passed directly to this controller.' : '',
 			enabled: this.enabled,
 			args: this.args.map( e => e.doc() ),
+			allowLongTag: this.allow_long_tag,
 			examples: this.examples(),
 		}
 	}
@@ -202,8 +204,8 @@ class ModuleTriggerArg {
 				this.help = 'numbers can be integers or decimals, positive or negative'
 				break;
 			case 'json':
-				this.example = '{"key":"value"}';
-				this.help = 'Valid json uses double quotes around all keys and all string values. Watch the commas!'
+				this.example = `'{"key1":"value1", "key2":"value2"}'`;
+				this.help = 'If there are any commas, you must wrap the json string in single quotes( \' ) or backticks ( ` ). Valid json uses double quotes around all keys and all string values.'
 				break;
 			case 'bool':
 				this.example = 'on';

@@ -15,6 +15,7 @@
 				font-family: Muli, sans-serif;
 				box-sizing: border-box;
 			}
+
 			#nav {
 				padding: 5px 0;
 			}
@@ -184,6 +185,7 @@
 			.trigger-title {font-size: 1.2em;}
 			.trigger-description {font-size:.8em;margin-bottom:10px;}
 			.trigger-meta {overflow-x: auto; flex-grow:10;}
+			.trigger-meta h5 {margin-bottom: 0;}
 		</style>
 		<meta charset="UTF-8" />
 	</head>
@@ -281,21 +283,30 @@
 										<h4>{{ controller.niceName }} <span v-if="controller.requiresInstance">({{ controller.instanceName }})</span> - {{controller.enabled ? 'Enabled' : 'Disabled'}}</h4>
 									</div>
 								</div>
-								<button v-if="controller.enabled" @click="expanded[controller.uuid] = !expanded[controller.uuid]" class="btn">{{expanded[controller.uuid] ? '-' : '+'}}</button>
+								<button v-if="controller.enabled" @click="toggleExpand(controller)" class="btn">{{isExpanded(controller) ? '-' : '+'}}</button>
 							</label>
 						</li>
-						<li v-if="controller.enabled && expanded[controller.uuid]" v-for="trigger in controller.triggers" class="trigger-box">
+						<li v-if="controller.enabled && isExpanded(controller)" v-for="trigger in controller.triggers" class="trigger-box">
 							<label>
 								<input :disabled="!controller.enabled || !allow_triggers" type="checkbox" @change="update_trigger(trigger)" v-model="trigger.enabled" />
 								<div class="trigger-meta">
 									<div class="trigger-title" style="display:inline-block;vertical-align: middle;">
-										{{ trigger.parentName }}<br />[{{trigger.label}}]
+										<pre>[{{trigger.label}}]</pre>
 										<div class="trigger-description">{{trigger.description}}</div>
-										<h5>Arguments:</h5>
-										<div v-for="arg in trigger.args" class="trigger-arg">&lt;{{arg.name}}:{{arg.type}}&gt; ({{arg.description}})<br /><small>{{arg.help}}</small></div>
-										<h5>Examples:</h5>
-										<div class="trigger-example" v-for="example in trigger.examples">
-											<code>{{example}}</code>
+										<div class="trigger-description">{{trigger.extrahelp}}</div>
+										<div v-if="trigger.args.length > 0">
+											<h5>Arguments:</h5>
+											<div style="margin-left: 10px;">
+												<div v-for="arg in trigger.args" class="trigger-arg">&lt;{{arg.name}}:{{arg.type}}&gt; ({{arg.description}})<br /><small>{{arg.help}}</small></div>
+											</div>
+										</div>
+										<div v-if="trigger.examples.length > 0">
+											<h5>Examples:</h5>
+											<div style="margin-left: 10px;">
+												<div class="trigger-example" v-for="example in trigger.examples">
+													<pre><code>{{example}}</code></pre>
+												</div>
+											</div>
 										</div>
 									</div>
 								</div>
@@ -325,7 +336,7 @@
 					show_config: false,
 					show_triggers: false,
 					config: {},
-					expanded: {},
+					expanded: [],
 					controllers: [],
 					pro_status: {}, // status of the propresenter master
 					status: "",
@@ -348,6 +359,15 @@
 					},
 				},
 				methods: {
+					isExpanded(controller) {
+						let i = this.expanded.indexOf( controller.uuid );
+						return i > -1;
+					},
+					toggleExpand(controller) {
+						let i = this.expanded.indexOf(controller.uuid);
+						if (i == -1) this.expanded.push(controller.uuid);
+						else this.expanded.splice(i);
+					},
 					disable_controller(controller) {
 						for (let t of controller.triggers) t.enabled = controller.enabled;
 					},
@@ -401,11 +421,6 @@
 									this.allow_triggers = data.allow_triggers;
 									
 									this.pro_status = data.pro_status;
-									if (Object.keys(this.expanded).length == 0) {
-										let newexp = {}
-										data.controllers.map(e=>newexp[e.uuid] = false);
-										this.expanded = newexp;
-									}
 									break;
 								case "vmix":
 									this.vmix_status = data;

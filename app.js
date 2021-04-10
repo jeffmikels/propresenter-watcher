@@ -74,12 +74,17 @@ for ( let k of Object.keys( config.controllers ) ) {
 	if ( !k in modulesByName ) continue;
 	let controllerModule = modulesByName[ k ];
 	let coptions = config.controllers[ k ];
+	let cm;
 	if ( Array.isArray( coptions ) ) {
 		for ( let instanceOptions of coptions ) {
-			configuredControllers.push( new controllerModule( instanceOptions ) )
+			cm = new controllerModule( instanceOptions );
+			cm.on( 'log', ( s ) => Log( s ) );
+			configuredControllers.push( cm );
 		}
 	} else {
-		configuredControllers.push( new controllerModule( coptions ) )
+		cm = new controllerModule( coptions );
+		cm.on( 'log', ( s ) => Log( s ) );
+		configuredControllers.push( cm );
 	}
 }
 

@@ -179,7 +179,7 @@ class ProSDClient extends EventEmitter {
 	}
 
 	reconnect( delay = 0 ) {
-		console.log( `Attempting reconnect in ${delay} seconds.` );
+		this.parent.log( `Attempting reconnect in ${delay} seconds.` );
 		clearTimeout( this.reconnectTimeout );
 		this.reconnectTimeout = setTimeout( () => {
 			this.connect();
@@ -196,8 +196,8 @@ class ProSDClient extends EventEmitter {
 		this.ws = new WebSocket( `ws://${this.host}:${this.port}/stagedisplay` );
 
 		this.ws.on( "error", ( err ) => {
-			console.log( "ProPresenter WebSocket Error:" );
-			// console.log(err);
+			this.parent.log( "ProPresenter WebSocket Error:" );
+			// this.parent.log(err);
 			this.ws.terminate();
 			this.reconnect( 30 );
 			this.notify();
@@ -237,13 +237,13 @@ class ProSDClient extends EventEmitter {
 	}
 
 	check( data ) {
-		console.log( data );
+		this.parent.log( data );
 		let newdata = {};
 		switch ( data.acn ) {
 			case "ath":
 				//{"acn":"ath","ath":true/false,"err":""}
 				if ( data.ath ) {
-					console.log( "ProPresenter Listener is Connected" );
+					this.parent.log( "ProPresenter Listener is Connected" );
 					this.active = true;
 					newdata = { type: "authentication", data: true };
 				} else {
@@ -389,7 +389,7 @@ class ProRemoteClient extends EventEmitter {
 	}
 
 	handleData( data ) {
-		console.log( data );
+		this.parent.log( data );
 
 		// process data for this class instance
 		switch ( data.action ) {

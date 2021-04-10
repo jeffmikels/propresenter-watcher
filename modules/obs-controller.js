@@ -34,6 +34,7 @@ class OBSController extends Module {
 		/*
 
 		TODO: Allow the use of numbers to refer to scenes and scene items
+		TODO: use catch on all this.obs.send commands !!!
 
 		TRIGGERS:
 			obs['jsonstring'] -> this.api
@@ -71,7 +72,7 @@ class OBSController extends Module {
 		this.registerTrigger(
 			new ModuleTrigger(
 				'~slideupdate~',
-				'Will update a text source named Lyrics on every slide update unless the slide notes contain "noobs"',
+				`Will update a text source identified by default_title_source in the configuration on every slide update unless the slide notes contain "noobs"`,
 				[],
 				( pro ) => {
 					if ( pro.slides.current.notes.match( /noobs/ ) ) return;
@@ -109,6 +110,14 @@ class OBSController extends Module {
 		this.connect();
 	}
 
+	getInfo() {
+		let r = super.getInfo();
+		r.sources = this.sources;
+		r.scenes = this.scenes;
+		r.currentSceneName = this.currentSceneName;
+		return r;
+	}
+
 	async connect() {
 		this.connected = false;
 		let address = `${this.host}:${this.port}`;
@@ -127,12 +136,12 @@ class OBSController extends Module {
 			this.getStatus();
 
 		} ).catch( err => { // Promise convention dicates you have a catch on every chain.
-			console.log( err );
+			this.log( err );
 		} );
 
 		this.connected = true;
 
-		nofity();
+		this.notify();
 	}
 
 	notify( data ) { this.emit( 'update', data ); }
