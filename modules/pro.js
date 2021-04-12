@@ -82,7 +82,6 @@ class ProController extends Module {
 			master: this.master,
 			follower: this.follower,
 			lower3: this.lower3,
-			slides: this.slides,
 			...this.sd.status(),
 		};
 		// r.master = this.master;
@@ -91,6 +90,13 @@ class ProController extends Module {
 		// r.slides = this.slides;
 		// r.sd = this.sd.status();
 		return r;
+	}
+
+	fullStatus() {
+		return {
+			...this.status(),
+			...this.remote.status,
+		}
 	}
 
 	_registerDefaultTriggers() {
@@ -345,6 +351,7 @@ class ProRemoteClient extends EventEmitter {
 
 	// notify is used for any status updates
 	notify() { this.emit( 'update', this ) }
+
 
 	send( Obj, callback = null ) {
 		// register callback if there is one.

@@ -271,6 +271,8 @@ wss.on( "connection", function connection( ws ) {
 		ws.send( tosend );
 	};
 
+
+	// SETUP MESSAGE CHANNELS FROM THE FRONTEND
 	ws.on( "message", function incoming( raw_message ) {
 		// to simulate socket.io
 		// each "data" will be a JSON encoded dictionary
@@ -378,13 +380,14 @@ function getStatus() {
 		lower3.html = pro.slides.current.text;
 		lower3.caption = pro.slides.current.caption;
 	}
+
 	return {
 		config,
 		allow_triggers,
+		lower3,
+		pro_status: pro.fullStatus(),
 		controllers: configuredControllers.map( e => e.getInfo() ),
 		triggers: configuredTriggers.map( e => e.doc() ),
-		pro_status: pro.status(),
-		lower3,
 	};
 }
 function broadcast( message, data ) {
