@@ -1,9 +1,9 @@
-const midi = require("midi");
-const { Module, ModuleTrigger, ModuleTriggerArg } = require("./module");
+const midi = require('midi');
+const { Module, ModuleTrigger, ModuleTriggerArg } = require('./module');
 
 class Timecode {
   constructor(start, fps) {
-    let [h, m, s, f] = start.split(":");
+    let [h, m, s, f] = start.split(':');
     this.h = +h || 0;
     this.m = +m || 0;
     this.s = +s || 0;
@@ -31,17 +31,17 @@ class Timecode {
   }
 
   toString() {
-    let h = this.h.toString().padStart(2, "0");
-    let m = this.m.toString().padStart(2, "0");
-    let s = this.s.toString().padStart(2, "0");
-    let f = this.f.toString().padStart(2, "0");
+    let h = this.h.toString().padStart(2, '0');
+    let m = this.m.toString().padStart(2, '0');
+    let s = this.s.toString().padStart(2, '0');
+    let f = this.f.toString().padStart(2, '0');
     return `${h}:${m}:${s}:${f}`;
   }
 }
 
 class MidiController extends Module {
-  static name = "midi";
-  static niceName = "MIDI Controller";
+  static name = 'midi';
+  static niceName = 'MIDI Controller';
   static create(config) {
     return new MidiController(config);
   }
@@ -84,20 +84,20 @@ class MidiController extends Module {
     const midi_note_pattern = /note\[(\d+)\s*(?:,\s*(\d+?))?\s*(?:,\s*(\d+))?\s*\]/gi;
     this.registerTrigger(
       new ModuleTrigger(
-        "note",
-        "play a midi note to the connected port",
+        'note',
+        'play a midi note to the connected port',
         [
-          new ModuleTriggerArg("note", "number", "number from 0-127", false),
+          new ModuleTriggerArg('note', 'number', 'number from 0-127', false),
           new ModuleTriggerArg(
-            "velocity",
-            "number",
-            "velocity from 0-127 defaults to 127",
+            'velocity',
+            'number',
+            'velocity from 0-127 defaults to 127',
             true
           ),
           new ModuleTriggerArg(
-            "channel",
-            "number",
-            "channel defaults to 0",
+            'channel',
+            'number',
+            'channel defaults to 0',
             true
           ),
         ],
@@ -111,14 +111,14 @@ class MidiController extends Module {
     const midi_pc_pattern = /pc\[(\d+)\s*(?:,\s*(\d+?))?\s*\]/gi;
     this.registerTrigger(
       new ModuleTrigger(
-        "pc",
-        "send a midi program change to the connected port",
+        'pc',
+        'send a midi program change to the connected port',
         [
-          new ModuleTriggerArg("program", "number", "number", false),
+          new ModuleTriggerArg('program', 'number', 'number', false),
           new ModuleTriggerArg(
-            "channel",
-            "number",
-            "channel defaults to 0",
+            'channel',
+            'number',
+            'channel defaults to 0',
             true
           ),
         ],
@@ -142,25 +142,25 @@ class MidiController extends Module {
     const midi_cc_pattern = /cc\[(\d+)\s*(?:,\s*(\d+?))?\s*(?:,\s*(\d+))?\s*\]/gi;
     this.registerTrigger(
       new ModuleTrigger(
-        "cc",
-        "send a midi control change to the connected port",
+        'cc',
+        'send a midi control change to the connected port',
         [
           new ModuleTriggerArg(
-            "controller",
-            "number",
-            "number from 0-127 (silence all by setting cc 120 and cc 123 to 0)",
+            'controller',
+            'number',
+            'number from 0-127 (silence all by setting cc 120 and cc 123 to 0)',
             false
           ),
           new ModuleTriggerArg(
-            "value",
-            "number",
-            "value from 0-127 defaults to 127",
+            'value',
+            'number',
+            'value from 0-127 defaults to 127',
             true
           ),
           new ModuleTriggerArg(
-            "channel",
-            "number",
-            "channel defaults to 0",
+            'channel',
+            'number',
+            'channel defaults to 0',
             true
           ),
         ],
@@ -176,16 +176,16 @@ class MidiController extends Module {
     const midi_mtc_pattern = /mtc\[(?:(.+?))?\s*(?:,\s*(\d+))?\s*\]/gi;
     this.registerTrigger(
       new ModuleTrigger(
-        "mtc",
-        "start/stop playing midi timecode to the connected port",
+        'mtc',
+        'start/stop playing midi timecode to the connected port',
         [
           new ModuleTriggerArg(
-            "initial",
-            "string",
-            "HH:MM:SS:FF where FF is frame number",
+            'initial',
+            'string',
+            'HH:MM:SS:FF where FF is frame number',
             true
           ),
-          new ModuleTriggerArg("fps", "number", "defaults to 24", true),
+          new ModuleTriggerArg('fps', 'number', 'defaults to 24', true),
         ],
         (_, initial, fps = 24) =>
           initial == null ? this.mtcStop() : this.mtcStart(initial, fps)
@@ -307,8 +307,8 @@ class MidiController extends Module {
     }, sleep);
   }
 
-  mtcStart(timecode = "01:00:00:01", fps = 24) {
-    console.log("MIDI MTC: Starting...");
+  mtcStart(timecode = '01:00:00:01', fps = 24) {
+    console.log('MIDI MTC: Starting...');
     this.timecode = new Timecode(timecode, fps);
     console.log(this.timecode);
     this.mtcStarted = Date.now();

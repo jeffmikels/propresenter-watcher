@@ -1,11 +1,11 @@
-const net = require("net");
-const { Module, ModuleTrigger, ModuleTriggerArg } = require("./module");
+const net = require('net');
+const { Module, ModuleTrigger, ModuleTriggerArg } = require('./module');
 
 class CompanionController extends Module {
   static supportsMultiple = true;
   static lastId = 0;
-  static name = "companion";
-  static niceName = "Companion Controller";
+  static name = 'companion';
+  static niceName = 'Companion Controller';
   static instances = [];
 
   static create(config) {
@@ -25,22 +25,22 @@ class CompanionController extends Module {
     this.host = host;
     this.port = +port;
 
-    this.lastcommand = "";
-    this.lastmessage = "";
+    this.lastcommand = '';
+    this.lastmessage = '';
 
     // COMPANION:
     // companionbutton[page number, button/bank number]
     const companion_button_pattern = /companionbutton\[\s*(.+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\]/gi;
     this.registerTrigger(
       new ModuleTrigger(
-        "companionbutton",
-        "click a streamdeck button",
+        'companionbutton',
+        'click a streamdeck button',
         [
-          new ModuleTriggerArg("page", "number", "companion page 1-99", false),
+          new ModuleTriggerArg('page', 'number', 'companion page 1-99', false),
           new ModuleTriggerArg(
-            "button",
-            "number",
-            "button / bank number",
+            'button',
+            'number',
+            'button / bank number',
             false
           ),
         ],
@@ -52,17 +52,17 @@ class CompanionController extends Module {
     const companion_page_pattern = /companionpage\[\s*(.+)\s*,\s*(\d+)\s*,\s*(.+)\s*\]/gi;
     this.registerTrigger(
       new ModuleTrigger(
-        "companionpage",
-        "select a streamdeck page",
+        'companionpage',
+        'select a streamdeck page',
         [
-          new ModuleTriggerArg("page", "number", "companion page 1-99", false),
-          new ModuleTriggerArg("surface", "string", "surface id", false),
+          new ModuleTriggerArg('page', 'number', 'companion page 1-99', false),
+          new ModuleTriggerArg('surface', 'string', 'surface id', false),
         ],
         (_, page, surface) => this.pageSelect(page, surface)
       )
     );
 
-    this.onupdate = (data) => this.emit("update", data);
+    this.onupdate = (data) => this.emit('update', data);
   }
 
   msg(message) {
@@ -73,28 +73,28 @@ class CompanionController extends Module {
   send(cmd) {
     this.lastcommand = cmd;
     console.log(`COMPANION: ${this.host}:${this.port} ${cmd}`);
-    this.msg("connecting to companion");
+    this.msg('connecting to companion');
 
     let client = new net.Socket();
     client.command = cmd; // save command to the client for later
-    client.on("data", (data) => {
+    client.on('data', (data) => {
       let res = data.toString();
       console.log(`COMPANION RESPONSE: (${client.command}) -> ${res}`);
-      if (res.match(/\+OK/)) this.msg("command successful");
-      else this.msg("command failed");
+      if (res.match(/\+OK/)) this.msg('command successful');
+      else this.msg('command failed');
     });
     client.connect(this.port, this.host, () => {
       console.log(`COMPANION SENDING: ${cmd}`);
-      this.msg("sending companion command");
-      client.write(cmd + "\x0a");
+      this.msg('sending companion command');
+      client.write(cmd + '\x0a');
       client.end();
     });
   }
 
   pageSelect(page = null, surface = null) {
     if (page == null || surface == null) {
-      console.log("page select requires a page number and a surface id");
-      this.msg("error sending command");
+      console.log('page select requires a page number and a surface id');
+      this.msg('error sending command');
       return;
     } else {
       let cmd = `PAGE-SET ${page} ${surface}`;
@@ -104,8 +104,8 @@ class CompanionController extends Module {
 
   buttonPress(page = null, button = null) {
     if (page == null || button == null) {
-      console.log("button press requires a page and a button/bank number");
-      this.msg("error sending command");
+      console.log('button press requires a page and a button/bank number');
+      this.msg('error sending command');
       return;
     } else {
       let cmd = `BANK-PRESS ${page} ${button}`;

@@ -1,5 +1,5 @@
-const got = require("got");
-const { Module, ModuleTrigger, ModuleTriggerArg } = require("./module");
+const got = require('got');
+const { Module, ModuleTrigger, ModuleTriggerArg } = require('./module');
 
 /* OLD VMIX TRIGGERS
 // VMIX:
@@ -55,8 +55,8 @@ const vmix_advanced = /\[vmix\](.*?)\[\/vmix\]/gis;
 */
 
 class VmixController extends Module {
-  static name = "vmix";
-  static niceName = "vMix Controller";
+  static name = 'vmix';
+  static niceName = 'vMix Controller';
   static create(config) {
     return new VmixController(config);
   }
@@ -66,7 +66,7 @@ class VmixController extends Module {
     let { host, port, default_title_input } = config;
 
     this.endpoint = `${host}:${port}/api/?`;
-    this.lastmessage = "";
+    this.lastmessage = '';
     this.enabled = true;
 
     this.default_title_input = default_title_input;
@@ -76,7 +76,7 @@ class VmixController extends Module {
     // setup triggers
     this.registerTrigger(
       new ModuleTrigger(
-        "~slideupdate~",
+        '~slideupdate~',
         'vMix Lyrics Handler (slide text => input text). This trigger runs on every slide update unless it sees "novmix" in the slide notes.',
         [],
         (pro) => {
@@ -94,25 +94,25 @@ class VmixController extends Module {
     const vmix_trans_pattern = /vmixtrans\[(\w+)\s*(?:,\s*(.+?))?\s*(?:,\s*(\d+))?\s*\]/gi;
     this.registerTrigger(
       new ModuleTrigger(
-        "vmixtrans",
-        "fires a vmix transition event",
+        'vmixtrans',
+        'fires a vmix transition event',
         [
           new ModuleTriggerArg(
-            "transition",
-            "string",
-            "can be any transition type vmix supports (Fade, Cut, etc.) (see the vmix documentation for more)",
+            'transition',
+            'string',
+            'can be any transition type vmix supports (Fade, Cut, etc.) (see the vmix documentation for more)',
             false
           ),
           new ModuleTriggerArg(
-            "input",
-            "number",
-            "the number of the input to make live, defaults to whatever is Preview",
+            'input',
+            'number',
+            'the number of the input to make live, defaults to whatever is Preview',
             true
           ),
           new ModuleTriggerArg(
-            "duration",
-            "number",
-            "defaults to 1000 ms",
+            'duration',
+            'number',
+            'defaults to 1000 ms',
             true
           ),
         ],
@@ -125,13 +125,13 @@ class VmixController extends Module {
     const vmix_cut_pattern = /vmixcut\[(.+?)\s*\]/gi;
     this.registerTrigger(
       new ModuleTrigger(
-        "vmixcut",
-        "fires a vmix cut event",
+        'vmixcut',
+        'fires a vmix cut event',
         [
           new ModuleTriggerArg(
-            "input",
-            "number",
-            "the number of the input to make live, defaults to whatever is Preview",
+            'input',
+            'number',
+            'the number of the input to make live, defaults to whatever is Preview',
             true
           ),
         ],
@@ -143,19 +143,19 @@ class VmixController extends Module {
     const vmix_fade_pattern = /vmixfade\[(.+?)\s*(?:,\s*(\d+))?\s*\]/gi;
     this.registerTrigger(
       new ModuleTrigger(
-        "vmixfade",
-        "fires a vmix fade event",
+        'vmixfade',
+        'fires a vmix fade event',
         [
           new ModuleTriggerArg(
-            "input",
-            "number",
-            "the number of the input to make live, defaults to whatever is Preview",
+            'input',
+            'number',
+            'the number of the input to make live, defaults to whatever is Preview',
             true
           ),
           new ModuleTriggerArg(
-            "duration",
-            "number",
-            "defaults to 1000 ms",
+            'duration',
+            'number',
+            'defaults to 1000 ms',
             true
           ),
         ],
@@ -169,25 +169,25 @@ class VmixController extends Module {
     const vmix_text_pattern = /vmixtext\[(.+?)\s*(?:,\s*(.+?))?\s*(?:,\s*(.+?))?\s*\]/gi;
     this.registerTrigger(
       new ModuleTrigger(
-        "vmixtext",
-        "updates the text on a vmix title",
+        'vmixtext',
+        'updates the text on a vmix title',
         [
           new ModuleTriggerArg(
-            "input",
-            "number",
-            "the number of the input containing the title to modify",
+            'input',
+            'number',
+            'the number of the input containing the title to modify',
             false
           ),
           new ModuleTriggerArg(
-            "selection",
-            "string",
-            "name or index of text box to update, defaults to 0",
+            'selection',
+            'string',
+            'name or index of text box to update, defaults to 0',
             true
           ),
           new ModuleTriggerArg(
-            "textoverride",
-            "string",
-            "defaults to the current slide body",
+            'textoverride',
+            'string',
+            'defaults to the current slide body',
             true
           ),
         ],
@@ -208,31 +208,31 @@ class VmixController extends Module {
     const vmix_overlay_pattern = /vmixoverlay\[(.+?)\s*(?:,\s*(.+?))?\s*(?:,\s*(.+?))?\s*\]/gi;
     this.registerTrigger(
       new ModuleTrigger(
-        "vmixoverlay",
-        "sets an input as an overlay, turning it on or off. If On or In, will wait duration ms and then disable again",
+        'vmixoverlay',
+        'sets an input as an overlay, turning it on or off. If On or In, will wait duration ms and then disable again',
         [
           new ModuleTriggerArg(
-            "overlay_number",
-            "number",
-            "which overlay slot do you want to use, defaults to 1",
+            'overlay_number',
+            'number',
+            'which overlay slot do you want to use, defaults to 1',
             true
           ),
           new ModuleTriggerArg(
-            "toggletype",
-            "string",
-            "In/Out do a transition, On/Off do a cut, defaults to a toggle using the default transition",
+            'toggletype',
+            'string',
+            'In/Out do a transition, On/Off do a cut, defaults to a toggle using the default transition',
             true
           ),
           new ModuleTriggerArg(
-            "input",
-            "number",
-            "the input to serve as the source of this overlay, defaults to the input currently on Preview",
+            'input',
+            'number',
+            'the input to serve as the source of this overlay, defaults to the input currently on Preview',
             true
           ),
           new ModuleTriggerArg(
-            "seconds_on",
-            "number",
-            "the number of seconds to leave this overlay on. defaults to infinite",
+            'seconds_on',
+            'number',
+            'the number of seconds to leave this overlay on. defaults to infinite',
             true
           ),
         ],
@@ -245,19 +245,19 @@ class VmixController extends Module {
     const vmix_streaming_pattern = /vmixstream\[([10]|on|off)\]/gi;
     this.registerTrigger(
       new ModuleTrigger(
-        "vmixstream",
-        "controls vmix stream",
+        'vmixstream',
+        'controls vmix stream',
         [
           new ModuleTriggerArg(
-            "onoff",
-            "bool",
-            "on or off (defaults to on)",
+            'onoff',
+            'bool',
+            'on or off (defaults to on)',
             false
           ),
           new ModuleTriggerArg(
-            "stream_number",
-            "number",
-            "1 or 0 defaults to 0",
+            'stream_number',
+            'number',
+            '1 or 0 defaults to 0',
             false
           ),
         ],
@@ -276,12 +276,12 @@ class VmixController extends Module {
     const vmix_advanced = /\[vmix\](.*?)\[\/vmix\]/gis;
     this.registerTrigger(
       new ModuleTrigger(
-        "vmixapi",
-        "sends commands directly to the vmix api ",
+        'vmixapi',
+        'sends commands directly to the vmix api ',
         [
           new ModuleTriggerArg(
-            "json_string",
-            "json",
+            'json_string',
+            'json',
             '{"Function" : "Slide", "Input": 1, "Duration": 3000}',
             false
           ),
@@ -292,29 +292,29 @@ class VmixController extends Module {
   }
 
   notify(data) {
-    this.emit("update", data);
+    this.emit('update', data);
   }
 
   send(cmd) {
     let url = `${this.endpoint}${cmd}`;
     console.log(`VMIX: ${url}`);
-    this.onupdate("sending command");
+    this.onupdate('sending command');
     got(url)
       .then(
         (res) => {
           console.log(`VMIX RESPONSE:\n${res.requestUrl}\n${res.body}`);
-          this.lastmessage = "command successful";
+          this.lastmessage = 'command successful';
           this.onupdate(this.lastmessage);
         },
         (err) => {
           // console.log(err);
-          this.lastmessage = "command failed";
+          this.lastmessage = 'command failed';
           this.onupdate(this.lastmessage);
         }
       )
       .catch((err) => {
-        console.log("vmix request error");
-        this.lastmessage = "error sending command";
+        console.log('vmix request error');
+        this.lastmessage = 'error sending command';
         this.onupdate(this.lastmessage);
       });
   }
@@ -324,28 +324,28 @@ class VmixController extends Module {
     for (let [key, value] of Object.entries(options)) {
       cmds.push(`${key}=${encodeURI(value)}`);
     }
-    let cmd = cmds.join("&");
+    let cmd = cmds.join('&');
     this.send(cmd);
   }
 
   // when input is null, we toggle between program and preview
-  transitionToInput(transition = "Cut", input = null, duration = 1000) {
+  transitionToInput(transition = 'Cut', input = null, duration = 1000) {
     let options = { Function: transition };
     if (input != null) options.Input = input;
-    if (transition != "Cut") options.Duration = duration;
+    if (transition != 'Cut') options.Duration = duration;
     this.api(options);
   }
 
   // when input is null, we toggle between program and preview
   fadeToInput(input = null, duration = 1000) {
-    this.transitionToInput("Fade", input, duration);
+    this.transitionToInput('Fade', input, duration);
   }
 
   cutToInput(input = null) {
-    this.transitionToInput("Cut", input);
+    this.transitionToInput('Cut', input);
   }
 
-  transition(transition_type = "Cut") {
+  transition(transition_type = 'Cut') {
     this.transitionToInput(transition_type);
   }
 
@@ -358,9 +358,9 @@ class VmixController extends Module {
   }
 
   // selected can be a name or an index
-  setInputText(input = null, text = "", selected = 0) {
+  setInputText(input = null, text = '', selected = 0) {
     let r = {
-      Function: "SetText",
+      Function: 'SetText',
       Value: text,
     };
     if (isNaN(+selected)) r.SelectedName = selected;
@@ -371,7 +371,7 @@ class VmixController extends Module {
 
   // type can be In, Out, On, Off or nothing for toggle
   // In/Out do a transition, On/Off do a cut
-  setOverlay(overlay = 1, type = "", input = null, seconds = null) {
+  setOverlay(overlay = 1, type = '', input = null, seconds = null) {
     if (this.previousTimer) clearTimeout(this.previousTimer);
 
     if (isNaN(+overlay)) overlay = 1;
@@ -381,14 +381,14 @@ class VmixController extends Module {
     if (input != null) r.Input = input;
     this.api(r);
 
-    if (seconds != null && (type == "In" || type == "On")) {
+    if (seconds != null && (type == 'In' || type == 'On')) {
       let flipped;
       switch (type) {
-        case "In":
-          flipped = "Out";
+        case 'In':
+          flipped = 'Out';
           break;
         default:
-          flipped = "Off";
+          flipped = 'Off';
       }
       this.previousTimer = setTimeout(
         () => this.setOverlay(overlay, flipped, input),
@@ -399,7 +399,7 @@ class VmixController extends Module {
 
   triggerStream(shouldStart = true, stream = 0) {
     this.api({
-      Function: shouldStart ? "StartStreaming" : "StopStreaming",
+      Function: shouldStart ? 'StartStreaming' : 'StopStreaming',
       Value: stream,
     });
   }

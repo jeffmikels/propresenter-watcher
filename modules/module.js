@@ -1,5 +1,5 @@
-const EventEmitter = require("events");
-const { v4: uuidv4 } = require("uuid");
+const EventEmitter = require('events');
+const { v4: uuidv4 } = require('uuid');
 
 /// each module needs to support the same basic api:
 ///    static supports multiple?
@@ -19,10 +19,10 @@ class Module extends EventEmitter {
   static supportsMultiple = false;
   static instances = [];
 
-  static name = "module";
-  static niceName = "Module";
+  static name = 'module';
+  static niceName = 'Module';
   static create() {
-    console.log("unimplemented");
+    console.log('unimplemented');
   }
 
   // lets us read the static name from an instance
@@ -67,7 +67,7 @@ class Module extends EventEmitter {
   }
 
   log(s) {
-    this.emit("log", s);
+    this.emit('log', s);
   }
 
   // ModuleTrigger( tagname, description, args, callback )
@@ -76,8 +76,8 @@ class Module extends EventEmitter {
     if (this.supportsMultiple) {
       moduleTrigger.args = [
         new ModuleTriggerArg(
-          "module_name",
-          "string",
+          'module_name',
+          'string',
           `you must specify "${this.instanceName}" as the module_name`,
           false
         ),
@@ -135,9 +135,9 @@ class ModuleTrigger {
     let examples = [];
     let exampleArgNames = this.args.map((a) => a.typed_name);
     let exampleArgValues = this.args.map((a) => a.example);
-    examples.push(`${this.tagname}[${exampleArgNames.join(",")}]`);
+    examples.push(`${this.tagname}[${exampleArgNames.join(',')}]`);
     if (this.args.length > 0)
-      examples.push(`${this.tagname}[${exampleArgValues.join(",")}]`);
+      examples.push(`${this.tagname}[${exampleArgValues.join(',')}]`);
     if (this.allow_long_tag) {
       examples.push(
         `[${this.tagname}]\nYou can put anything here ( < > 😎 , ' ").\n[/${this.tagname}]`
@@ -161,7 +161,7 @@ class ModuleTrigger {
       description: this.description,
       extrahelp: this.allow_long_tag
         ? 'This trigger can make use of the "long tag" format (see final example below). Tags in this format allow you to use any characters you want, including whitespace, commas, quotation marks, and even emojis. The outermost whitespace will be stripped away, but interior whitespace will be preserved and passed directly to this controller.'
-        : "",
+        : '',
       enabled: this.enabled,
       args: this.args.map((e) => e.doc()),
       allowLongTag: this.allow_long_tag,
@@ -182,18 +182,18 @@ class ModuleTrigger {
       if (i < incomingArgs.length) {
         let arg = incomingArgs[i];
         switch (type) {
-          case "json":
-            val = JSON.parse(arg ?? "{}");
+          case 'json':
+            val = JSON.parse(arg ?? '{}');
             break;
-          case "bool":
-            val = arg == 1 || arg == true || arg == "true" || arg == "on";
+          case 'bool':
+            val = arg == 1 || arg == true || arg == 'true' || arg == 'on';
             break;
-          case "number":
+          case 'number':
             val = parseFloat(arg ?? 0);
             break;
-          case "string":
+          case 'string':
           default:
-            val = arg ?? "";
+            val = arg ?? '';
         }
       }
       parsed.push(val);
@@ -214,31 +214,31 @@ class ModuleTrigger {
 }
 
 class ModuleTriggerArg {
-  constructor(name = "", type = "number", description = "", optional = false) {
+  constructor(name = '', type = 'number', description = '', optional = false) {
     this.name = name;
     this.type = type;
     this.description = description;
     this.optional = optional == true;
     this.typed_name = `${name}_${type}`;
-    this.help = "";
+    this.help = '';
     switch (this.type) {
-      case "number":
+      case 'number':
         this.example = (Math.random() * 100).toFixed(0);
-        this.help = "numbers can be integers or decimals, positive or negative";
+        this.help = 'numbers can be integers or decimals, positive or negative';
         break;
-      case "json":
+      case 'json':
         this.example = `'{"key1":"value1", "key2":"value2"}'`;
         this.help =
           "If there are any commas, you must wrap the json string in single quotes( ' ) or backticks ( ` ). Valid json uses double quotes around all keys and all string values.";
         break;
-      case "bool":
-        this.example = "on";
-        this.help = " bool values can be any of true,false,1,0,on,off";
+      case 'bool':
+        this.example = 'on';
+        this.help = ' bool values can be any of true,false,1,0,on,off';
         break;
-      case "string":
+      case 'string':
         this.help =
-          "Strings with commas must be surrounded by quotation marks. You may use single quotes ('), double quotes (\"), or backticks (`).";
-        this.example = "string without comma";
+          'Strings with commas must be surrounded by quotation marks. You may use single quotes (\'), double quotes ("), or backticks (`).';
+        this.example = 'string without comma';
         break;
       default:
         this.example = name;
@@ -258,8 +258,8 @@ class ModuleTriggerArg {
 }
 
 class GlobalModule extends Module {
-  static name = "global";
-  static niceName = "Global";
+  static name = 'global';
+  static niceName = 'Global';
 }
 
 module.exports = { Module, ModuleTrigger, ModuleTriggerArg, GlobalModule };

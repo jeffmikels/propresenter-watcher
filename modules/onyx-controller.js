@@ -1,15 +1,15 @@
-const { Module, ModuleTrigger, ModuleTriggerArg } = require("./module");
+const { Module, ModuleTrigger, ModuleTriggerArg } = require('./module');
 
 //Set up telnet client for talking to MxManager
-var telnet = require("telnet-client");
+var telnet = require('telnet-client');
 var tnc = new telnet();
 var reconnectTimer = 0;
 var heartbeatTimer = 0;
 let poll_in = 500;
 
 class OnyxController extends Module {
-  static name = "onyx";
-  static niceName = "Onyx Controller";
+  static name = 'onyx';
+  static niceName = 'Onyx Controller';
   static create(config) {
     return new OnyxController(config);
   }
@@ -32,19 +32,19 @@ class OnyxController extends Module {
     const onyx_go_pattern = /onyxgo\[(.+?)\s*(?:,\s*(\d+))?\s*\]/gi;
     this.registerTrigger(
       new ModuleTrigger(
-        "onyxgo",
-        "fire an onyx cuelist with an optional specific cue",
+        'onyxgo',
+        'fire an onyx cuelist with an optional specific cue',
         [
           new ModuleTriggerArg(
-            "cuelist",
-            "number",
-            "onyx cuelist number",
+            'cuelist',
+            'number',
+            'onyx cuelist number',
             false
           ),
           new ModuleTriggerArg(
-            "cue",
-            "number",
-            "onyx cue, defaults to null",
+            'cue',
+            'number',
+            'onyx cue, defaults to null',
             true
           ),
         ],
@@ -55,19 +55,19 @@ class OnyxController extends Module {
     const onyx_release_pattern = /onyxrelease\[(.+?)\s*(?:,\s*(\d+))?\s*\]/gi;
     this.registerTrigger(
       new ModuleTrigger(
-        "onyxrelease",
-        "release an onyx cuelist, optionally a specific cue",
+        'onyxrelease',
+        'release an onyx cuelist, optionally a specific cue',
         [
           new ModuleTriggerArg(
-            "cuelist",
-            "number",
-            "onyx cuelist number",
+            'cuelist',
+            'number',
+            'onyx cuelist number',
             false
           ),
           new ModuleTriggerArg(
-            "cue",
-            "number",
-            "onyx cue, defaults to null",
+            'cue',
+            'number',
+            'onyx cue, defaults to null',
             true
           ),
         ],
@@ -77,15 +77,15 @@ class OnyxController extends Module {
   }
 
   setupListeners() {
-    tnc.on("ready", (prompt) => {
+    tnc.on('ready', (prompt) => {
       this.connectedTelnet = true;
-      console.log("> Onyx Telnet Connection Established");
+      console.log('> Onyx Telnet Connection Established');
     });
 
-    tnc.on("close", () => {
+    tnc.on('close', () => {
       this.connectedTelnet = false;
       this.connectedMPC = false;
-      console.log("> Onyx Telnet Connection Closed");
+      console.log('> Onyx Telnet Connection Closed');
       //Start a timer to reconnect, if one hasn't already been started
       if (!reconnectTimer) {
         reconnectTimer = setInterval(() => {
@@ -95,10 +95,10 @@ class OnyxController extends Module {
       clearInterval(heartbeatTimer);
     });
 
-    tnc.on("error", (e) => {
+    tnc.on('error', (e) => {
       this.connectedTelnet = false;
       this.connectedMPC = false;
-      console.log("> Onyx Telnet Connection Error");
+      console.log('> Onyx Telnet Connection Error');
       console.log(e);
     });
   }
@@ -114,27 +114,27 @@ class OnyxController extends Module {
 
   // Connect to MxManager Telnet
   connectTelnet() {
-    console.log("> Connecting to MxManager Telnet");
+    console.log('> Connecting to MxManager Telnet');
     tnc.connect(this.get_telnet_connect_settings());
   }
 
   goCuelist(cuelist, cue = null) {
     if (cue === null) {
-      this.run_telnet("GQL " + cuelist);
+      this.run_telnet('GQL ' + cuelist);
     } else {
-      this.run_telnet("GTQ " + cuelist + " " + cue);
+      this.run_telnet('GTQ ' + cuelist + ' ' + cue);
     }
   }
 
   releaseCuelist(cuelist) {
-    this.run_telnet("RQL " + cuelist);
+    this.run_telnet('RQL ' + cuelist);
   }
 
   get_telnet_connect_settings() {
     return {
       host: this.onyxIP,
       port: this.onyxPort,
-      shellPrompt: "",
+      shellPrompt: '',
       timeout: 1500,
       negotiationMandatory: false,
     };

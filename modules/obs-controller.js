@@ -1,13 +1,13 @@
-const OBSWebSocket = require("obs-websocket-js");
-const { Module, ModuleTrigger, ModuleTriggerArg } = require("./module");
+const OBSWebSocket = require('obs-websocket-js');
+const { Module, ModuleTrigger, ModuleTriggerArg } = require('./module');
 
 // NOTE: OBS WebSocket Documentation is here:
 // https://www.npmjs.com/package/obs-websocket-js
 // https://github.com/Palakis/obs-websocket
 
 class OBSController extends Module {
-  static name = "obs";
-  static niceName = "OBS Controller";
+  static name = 'obs';
+  static niceName = 'OBS Controller';
   static create(config) {
     return new OBSController(config);
   }
@@ -19,7 +19,7 @@ class OBSController extends Module {
     this.host = host;
     this.port = port;
     this.password = password;
-    this.default_title_source = config.default_title_source ?? "Lyrics";
+    this.default_title_source = config.default_title_source ?? 'Lyrics';
     this.obs = new OBSWebSocket();
     this.studioMode = false;
 
@@ -28,8 +28,8 @@ class OBSController extends Module {
     // (keyed by source name)
     this.sources = {};
     this.scenes = {};
-    this.currentSceneName = "";
-    this.previewSceneName = "";
+    this.currentSceneName = '';
+    this.previewSceneName = '';
 
     // triggers and functions needed
     /*
@@ -70,7 +70,7 @@ class OBSController extends Module {
     // setup triggers
     this.registerTrigger(
       new ModuleTrigger(
-        "~slideupdate~",
+        '~slideupdate~',
         `Will update a text source identified by default_title_source in the configuration on every slide update unless the slide notes contain "noobs"`,
         [],
         (pro) => {
@@ -95,12 +95,12 @@ class OBSController extends Module {
     // [/obs]
     this.registerTrigger(
       new ModuleTrigger(
-        "obs",
-        "sends commands directly to the obs api ",
+        'obs',
+        'sends commands directly to the obs api ',
         [
           new ModuleTriggerArg(
-            "json_string",
-            "json",
+            'json_string',
+            'json',
             '{"SetCurrentScene": {"scene-name": "Live Broadcast"}}',
             false
           ),
@@ -129,9 +129,9 @@ class OBSController extends Module {
       .then(() => {
         this.connected = true;
 
-        this.on("SwitchScenes", (d) => (this.currentSceneName = d.sceneName));
-        this.on("ScenesChanged", (arr) => this.updateScenes(arr));
-        this.on("SourceRenamed", (d) => this.renameSource(d));
+        this.on('SwitchScenes', (d) => (this.currentSceneName = d.sceneName));
+        this.on('ScenesChanged', (arr) => this.updateScenes(arr));
+        this.on('SourceRenamed', (d) => this.renameSource(d));
 
         // not implemented, but might be useful
         // this.on( 'SourceCreated', ( d ) => this.handleSourceCreated(d) );
@@ -150,7 +150,7 @@ class OBSController extends Module {
   }
 
   notify(data) {
-    this.emit("update", data);
+    this.emit('update', data);
   }
 
   // obj can contain multiple commands
@@ -209,38 +209,38 @@ class OBSController extends Module {
   // GLOBAL SETTERS
   async setStudioMode(onoff = true) {
     return onoff
-      ? await this.obs.send("EnableStudioMode")
-      : await this.obs.send("DisableStudioMode");
+      ? await this.obs.send('EnableStudioMode')
+      : await this.obs.send('DisableStudioMode');
   }
 
   // SCENE SETTERS
   async setPreviewScene(scene) {
-    return await this.obs.send("SetPreviewScene", { "scene-name": scene });
+    return await this.obs.send('SetPreviewScene', { 'scene-name': scene });
   }
 
   async transitionToScene(transition = null, scene = null, duration = null) {
     // remember, Javascript will preserve the insertion order of these keys
     let cmd = {};
     if (transition != null)
-      cmd.SetCurrentTransition = { "transition-name": transition };
+      cmd.SetCurrentTransition = { 'transition-name': transition };
 
     if (duration != null) cmd.SetTransitionDuration = { duration };
 
     if (scene == null) {
       cmd.TransitionToProgram = {};
     } else {
-      cmd.SetCurrentScene = { "scene-name": scene };
+      cmd.SetCurrentScene = { 'scene-name': scene };
     }
     return await this.api(cmd);
   }
 
   // when input is null, we toggle between program and preview
   async fadeToScene(scene = null, duration = null) {
-    return await this.transitionToScene("Fade", scene, duration);
+    return await this.transitionToScene('Fade', scene, duration);
   }
 
   async cutToScene(scene = null) {
-    return await this.transitionToScene("Cut", scene);
+    return await this.transitionToScene('Cut', scene);
   }
 
   async transition(transition_type = null) {
@@ -257,10 +257,10 @@ class OBSController extends Module {
 
   // SOURCE SETTERS
   async setSourceMute(source, onoff = true) {
-    return await this.obs.send("SetMute", { source, mute: onoff });
+    return await this.obs.send('SetMute', { source, mute: onoff });
   }
 
-  async setSourceText(source = null, text = "") {
+  async setSourceText(source = null, text = '') {
     // DEPRECATED FUNCTION
     // SetTextFreetype2Properties
     // input type: text_ft2_source_v2
@@ -273,7 +273,7 @@ class OBSController extends Module {
     // we send to both... it's wasteful, but not a problem
 
     // also, OBS won't actually update the text source if text is empty
-    text = text == "" ? " " : text;
+    text = text == '' ? ' ' : text;
     source = source ?? this.default_title_source;
     return await this.api({
       SetTextFreetype2Properties: { source, text },

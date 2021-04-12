@@ -1,4 +1,4 @@
-const got = require("got");
+const got = require('got');
 
 class WebLogger {
   constructor(url, key) {
@@ -19,7 +19,7 @@ class WebLogger {
       })
       .then((res, err) => {
         if (err) {
-          console.log("error with remote log...");
+          console.log('error with remote log...');
           console.log(err);
         }
       });
