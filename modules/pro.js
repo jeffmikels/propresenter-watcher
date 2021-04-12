@@ -2,13 +2,12 @@
 const { EventEmitter } = require( "ws" );
 const WebSocket = require( "ws" );
 
-const { Module, ModuleTrigger, ModuleTriggerArg } = require( './module.js' );
-const { hms2secs, timestring2secs, markdown } = require( '../helpers.js' );
-
+const { Module, ModuleTrigger, ModuleTriggerArg } = require( "./module.js" );
+const { hms2secs, timestring2secs, markdown } = require( "../helpers.js" );
 
 class ProController extends Module {
-	static name = 'pro';
-	static niceName = 'ProPresenter Controller'
+	static name = "pro";
+	static niceName = "ProPresenter Controller";
 	static supportsMultiple = true;
 	static get master() {
 		for ( let i of ProController.instances ) {
@@ -17,9 +16,13 @@ class ProController extends Module {
 		return null;
 	}
 
-	static create( config ) { return new ProController( config ); }
+	static create( config ) {
+		return new ProController( config );
+	}
 
-	get slides() { return this.sd.slides; }
+	get slides() {
+		return this.sd.slides;
+	}
 
 	constructor ( config ) {
 		super( config );
@@ -35,7 +38,7 @@ class ProController extends Module {
 		this.follower = false;
 		// this.options = options;
 
-		this.lower3 = { text: '', html: '', caption: '' }
+		this.lower3 = { text: "", html: "", caption: "" };
 		this.host = host;
 		this.port = port;
 		this.version = version;
@@ -47,18 +50,27 @@ class ProController extends Module {
 		this.remote = new ProRemoteClient( host, port, remote_pass, version, this );
 
 		// exposes the names of the events available on this emitter
-		this.events = [ 'sdupdate', 'sddata', 'msgupdate', 'sysupdate', 'slideupdate', 'timersupdate', 'remoteupdate', 'remotedata' ];
+		this.events = [
+			"sdupdate",
+			"sddata",
+			"msgupdate",
+			"sysupdate",
+			"slideupdate",
+			"timersupdate",
+			"remoteupdate",
+			"remotedata",
+		];
 
-		this.sd.on( 'update', () => this.emit( 'sdupdate' ) );
-		this.sd.on( 'data', ( data ) => this.emit( 'sddata', data ) );
-		this.sd.on( 'msgupdate', ( data ) => this.emit( 'msgupdate', data ) );
-		this.sd.on( 'sysupdate', ( data ) => this.emit( 'sysupdate', data ) );
-		this.sd.on( 'slideupdate', ( data ) => this.emit( 'slideupdate', data ) );
-		this.sd.on( 'timersupdate', ( data ) => this.emit( 'timersupdate', data ) );
+		this.sd.on( "update", () => this.emit( "sdupdate" ) );
+		this.sd.on( "data", ( data ) => this.emit( "sddata", data ) );
+		this.sd.on( "msgupdate", ( data ) => this.emit( "msgupdate", data ) );
+		this.sd.on( "sysupdate", ( data ) => this.emit( "sysupdate", data ) );
+		this.sd.on( "slideupdate", ( data ) => this.emit( "slideupdate", data ) );
+		this.sd.on( "timersupdate", ( data ) => this.emit( "timersupdate", data ) );
 
-		this.remote.on( 'update', () => this.emit( 'remoteupdate' ) );
-		this.remote.on( 'data', ( data ) => {
-			this.emit( 'remotedata', data );
+		this.remote.on( "update", () => this.emit( "remoteupdate" ) );
+		this.remote.on( "data", ( data ) => {
+			this.emit( "remotedata", data );
 			if ( this.master ) {
 				for ( let i of ProController.instances ) {
 					if ( i.id == this.id ) continue;
@@ -74,7 +86,7 @@ class ProController extends Module {
 		return {
 			...super.getInfo(),
 			...this.status(),
-		}
+		};
 	}
 
 	status() {
@@ -96,7 +108,7 @@ class ProController extends Module {
 		return {
 			...this.status(),
 			...this.remote.status,
-		}
+		};
 	}
 
 	_registerDefaultTriggers() {
@@ -105,26 +117,26 @@ class ProController extends Module {
 		// register default triggers
 		this.registerTrigger(
 			new ModuleTrigger(
-				'master',
-				'flags the source propresenter instance as the master instance',
+				"master",
+				"flags the source propresenter instance as the master instance",
 				[],
 				( caller ) => {
 					caller.master = true;
 					caller.follower = false;
-					caller.emit( 'update' );
+					caller.emit( "update" );
 				}
 			)
 		);
 
 		this.registerTrigger(
 			new ModuleTrigger(
-				'follower',
-				'flags the source propresenter instance as a follower instance',
+				"follower",
+				"flags the source propresenter instance as a follower instance",
 				[],
 				( caller ) => {
 					caller.master = false;
 					caller.follower = true;
-					caller.emit( 'update' );
+					caller.emit( "update" );
 				}
 			)
 		);
@@ -142,7 +154,7 @@ class ProSlide {
 // listens to ProPresenter as a stage display client
 class ProSDClient extends EventEmitter {
 	constructor ( host, port, password, version = 6, parent ) {
-		super()
+		super();
 		this.host = host;
 		this.port = port;
 		this.password = password;
@@ -162,16 +174,18 @@ class ProSDClient extends EventEmitter {
 			next: new ProSlide(),
 		};
 
-		this.ondata = ( data ) => this.emit( 'data', data, this );
-		this.onmsgupdate = ( data ) => this.emit( 'msgupdate', data, this );
-		this.onsysupdate = ( data ) => this.emit( 'sysupdate', data, this );
-		this.onslideupdate = ( data ) => this.emit( 'slideupdate', data, this );
-		this.ontimersupdate = ( data ) => this.emit( 'timersupdate', data, this );
+		this.ondata = ( data ) => this.emit( "data", data, this );
+		this.onmsgupdate = ( data ) => this.emit( "msgupdate", data, this );
+		this.onsysupdate = ( data ) => this.emit( "sysupdate", data, this );
+		this.onslideupdate = ( data ) => this.emit( "slideupdate", data, this );
+		this.ontimersupdate = ( data ) => this.emit( "timersupdate", data, this );
 
 		this.connect();
 	}
 
-	notify() { this.emit( 'update', this ) }
+	notify() {
+		this.emit( "update", this );
+	}
 
 	status() {
 		return {
@@ -259,13 +273,20 @@ class ProSDClient extends EventEmitter {
 				}
 				break;
 			case "tmr":
-				this.timers[ data.uid ] = { uid: data.uid, text: data.txt, seconds: hms2secs( data.txt ) };
+				this.timers[ data.uid ] = {
+					uid: data.uid,
+					text: data.txt,
+					seconds: hms2secs( data.txt ),
+				};
 				newdata = { type: "timer", data: this.timers[ data.uid ] };
 				if ( this.ontimersupdate ) this.ontimersupdate( this.timers[ data.uid ] );
 				break;
 			case "sys":
 				// { "acn": "sys", "txt": " 11:17 AM" }
-				this.system_time = { text: data.txt, seconds: timestring2secs( data.txt ) };
+				this.system_time = {
+					text: data.txt,
+					seconds: timestring2secs( data.txt ),
+				};
 				newdata = { type: "systime", data: this.system_time };
 				if ( this.onsysupdate ) this.onsysupdate( this.system_time );
 				break;
@@ -350,15 +371,17 @@ class ProRemoteClient extends EventEmitter {
 	}
 
 	// notify is used for any status updates
-	notify() { this.emit( 'update', this ) }
-
+	notify() {
+		this.emit( "update", this );
+	}
 
 	send( Obj, callback = null ) {
 		// register callback if there is one.
 		if ( typeof callback == "function" ) {
 			// fix api bug
 			let responseAction = Obj.action;
-			if ( Obj.action == "presentationRequest" ) responseAction = "presentationCurrent";
+			if ( Obj.action == "presentationRequest" )
+				responseAction = "presentationCurrent";
 			this.callbacks[ responseAction ] = callback;
 		}
 		this.ws.send( JSON.stringify( Obj ) );
@@ -426,7 +449,7 @@ class ProRemoteClient extends EventEmitter {
 		}
 
 		// handle update stream
-		this.emit( 'data', data, this );
+		this.emit( "data", data, this );
 
 		// handle callbacks
 		if ( typeof this.callbacks[ data.action ] == "function" ) {
@@ -471,7 +494,8 @@ class ProRemoteClient extends EventEmitter {
 	triggerSlide( index = 0, path = null, callback = null ) {
 		if ( !this.controlling ) return false;
 		if ( path == null && this.status.currentPresentation == null ) return false;
-		if ( path == null ) path = this.status.currentPresentation.presentationCurrentLocation;
+		if ( path == null )
+			path = this.status.currentPresentation.presentationCurrentLocation;
 		this.send(
 			{
 				action: "presentationTriggerIndex",
@@ -498,6 +522,5 @@ class ProRemoteClient extends EventEmitter {
 		return this.triggerSlide( nextIndex, null, callback );
 	}
 }
-
 
 module.exports.ProController = ProController;
