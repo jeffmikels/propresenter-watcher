@@ -443,7 +443,7 @@ class ProRemoteClient extends EventEmitter {
 		this.send( { action: "playlistRequestAll" }, callback );
 	}
 
-	getPresentation( path = null, quality = 10, callback = null ) {
+	getPresentation( path = null, quality = 200, callback = null ) {
 		if ( path == null ) {
 			this.send(
 				{
