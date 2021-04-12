@@ -9,10 +9,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - name: Setup Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: '3.8'
+    - name: Install Packages
+      run: apt-get install libasound2-dev
     - name: Install modules
       run: npm install
     - name: Run ESLint
