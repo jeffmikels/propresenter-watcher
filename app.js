@@ -297,9 +297,7 @@ wss.on( 'connection', function connection( ws ) {
 		console.log( 'received message from frontend' );
 		console.log( raw_message );
 
-		var json = JSON.parse( raw_message );
-		var message = json.message;
-		var data = json.data;
+		let { message, data } = JSON.parse( raw_message );
 
 		switch ( message ) {
 			case 'echo':

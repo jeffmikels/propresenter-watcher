@@ -1,5 +1,5 @@
-const EventEmitter = require('events');
-const { v4: uuidv4 } = require('uuid');
+const EventEmitter = require( 'events' );
+const { v4: uuidv4 } = require( 'uuid' );
 
 /// each module needs to support the same basic api:
 ///    static supports multiple?
@@ -22,7 +22,7 @@ class Module extends EventEmitter {
   static name = 'module';
   static niceName = 'Module';
   static create() {
-    console.log('unimplemented');
+    console.log( 'unimplemented' );
   }
 
   // lets us read the static name from an instance
@@ -42,38 +42,38 @@ class Module extends EventEmitter {
   triggersByTag = {};
   enabled = true;
 
-  constructor(config = {}) {
+  constructor ( config = {} ) {
     super();
     this.config = config;
     this.uuid = uuidv4();
     this._instanceName = config.name; // might be null
 
     // register custom triggers specified in the config
-    if (config.triggers) {
-      for (let t of config.triggers) {
+    if ( config.triggers ) {
+      for ( let t of config.triggers ) {
         this.registerTrigger(
           new ModuleTrigger(
             t.tagname,
             t.description,
             t.args.map(
-              (e) =>
-                new ModuleTriggerArg(e.name, e.type, e.description, e.optional)
+              ( e ) =>
+                new ModuleTriggerArg( e.name, e.type, e.description, e.optional )
             ),
-            (pro, ...args) => t.callback(this, pro, ...args)
+            ( pro, ...args ) => t.callback( this, pro, ...args )
           )
         );
       }
     }
   }
 
-  log(s) {
-    this.emit('log', s);
+  log( s ) {
+    this.emit( 'log', s );
   }
 
   // ModuleTrigger( tagname, description, args, callback )
-  registerTrigger(moduleTrigger) {
+  registerTrigger( moduleTrigger ) {
     moduleTrigger.parent = this;
-    if (this.supportsMultiple) {
+    if ( this.supportsMultiple ) {
       moduleTrigger.args = [
         new ModuleTriggerArg(
           'module_name',
@@ -84,8 +84,8 @@ class Module extends EventEmitter {
         ...moduleTrigger.args,
       ];
     }
-    this.triggers.push(moduleTrigger);
-    this.triggersByTag[moduleTrigger.tagname] = moduleTrigger;
+    this.triggers.push( moduleTrigger );
+    this.triggersByTag[ moduleTrigger.tagname ] = moduleTrigger;
   }
 
   getInfo() {
@@ -98,16 +98,16 @@ class Module extends EventEmitter {
       instanceName: this.instanceName,
       requiresInstance: this.supportsMultiple,
       config: this.config,
-      triggers: this.triggers.map((e) => e.doc()),
+      triggers: this.triggers.map( ( e ) => e.doc() ),
     };
   }
 
   // ppInstance is the ProPresenter instance
   // that triggered this trigger
-  handleTriggerTag(tagname, args, proInstance) {
-    if (tagname in this.triggersByTag && this.triggersByTag[tagname].enabled) {
-      let trigger = this.triggersByTag[tagname];
-      trigger.fire(args, proInstance);
+  handleTriggerTag( tagname, args, proInstance ) {
+    if ( tagname in this.triggersByTag && this.triggersByTag[ tagname ].enabled ) {
+      let trigger = this.triggersByTag[ tagname ];
+      trigger.fire( args, proInstance );
     }
   }
 
@@ -115,11 +115,11 @@ class Module extends EventEmitter {
   // data more directly, it should implement a function
   // to handle propresenter updates, but only if a trigger
   // cannot be configured to do what you need.
-  handleProUpdate(updateType, pro) {}
+  handleProUpdate( updateType, pro ) { }
 }
 
 class ModuleTrigger {
-  constructor(tagname, description, args = [], callback) {
+  constructor ( tagname, description, args = [], callback ) {
     this.uuid = uuidv4();
     this.enabled = true;
     this.tagname = tagname;
@@ -127,18 +127,18 @@ class ModuleTrigger {
     this.args = args;
     this.callback = callback;
     this.allow_long_tag =
-      this.args.length == 1 && this.args[0].type.match(/string|json/);
+      this.args.length == 1 && this.args[ 0 ].type.match( /string|json/ );
   }
 
   examples() {
-    if (this.tagname.match(/^~.+~$/)) return [];
+    if ( this.tagname.match( /^~.+~$/ ) ) return [];
     let examples = [];
-    let exampleArgNames = this.args.map((a) => a.typed_name);
-    let exampleArgValues = this.args.map((a) => a.example);
-    examples.push(`${this.tagname}[${exampleArgNames.join(',')}]`);
-    if (this.args.length > 0)
-      examples.push(`${this.tagname}[${exampleArgValues.join(',')}]`);
-    if (this.allow_long_tag) {
+    let exampleArgNames = this.args.map( ( a ) => a.typed_name );
+    let exampleArgValues = this.args.map( ( a ) => a.example );
+    examples.push( `${this.tagname}[${exampleArgNames.join( ',' )}]` );
+    if ( this.args.length > 0 )
+      examples.push( `${this.tagname}[${exampleArgValues.join( ',' )}]` );
+    if ( this.allow_long_tag ) {
       examples.push(
         `[${this.tagname}]\nYou can put anything here ( < > 😎 , ' ").\n[/${this.tagname}]`
       );
@@ -148,9 +148,9 @@ class ModuleTrigger {
 
   doc() {
     let label = `slide code: ${this.tagname}`;
-    let m = this.tagname.match(/^~(.+)~$/);
-    if (m) {
-      label = `every ${m[1]}`;
+    let m = this.tagname.match( /^~(.+)~$/ );
+    if ( m ) {
+      label = `every ${m[ 1 ]}`;
     }
     return {
       uuid: this.uuid,
@@ -163,67 +163,69 @@ class ModuleTrigger {
         ? 'This trigger can make use of the "long tag" format (see final example below). Tags in this format allow you to use any characters you want, including whitespace, commas, quotation marks, and even emojis. The outermost whitespace will be stripped away, but interior whitespace will be preserved and passed directly to this controller.'
         : '',
       enabled: this.enabled,
-      args: this.args.map((e) => e.doc()),
+      args: this.args.map( ( e ) => e.doc() ),
       allowLongTag: this.allow_long_tag,
       examples: this.examples(),
     };
   }
 
-  fireIfEnabled(incomingArgs, ppInstance) {
-    if (!this.enabled) return false;
-    if (this.parent && !this.parent.enabled) return false;
+  fireIfEnabled( incomingArgs, ppInstance ) {
+    if ( !this.enabled ) return false;
+    if ( this.parent && !this.parent.enabled ) return false;
 
     // parse each arg according to the arg type
     let parsed = [];
 
-    for (let i = 0; i < this.args.length; i++) {
-      let type = this.args[i].type;
+    for ( let i = 0; i < this.args.length; i++ ) {
+      let type = this.args[ i ].type;
       let val = null;
-      if (i < incomingArgs.length) {
-        let arg = incomingArgs[i];
-        switch (type) {
-          case 'json':
-            val = JSON.parse(arg ?? '{}');
-            break;
-          case 'bool':
-            val = arg == 1 || arg == true || arg == 'true' || arg == 'on';
-            break;
-          case 'number':
-            val = parseFloat(arg ?? 0);
-            break;
-          case 'string':
-          default:
-            val = arg ?? '';
+      if ( i < incomingArgs.length ) {
+        let arg = incomingArgs[ i ];
+        if ( arg != null ) {
+          switch ( type ) {
+            case 'json':
+              val = JSON.parse( arg ?? '{}' );
+              break;
+            case 'bool':
+              val = arg == 1 || arg == true || arg == 'true' || arg == 'on';
+              break;
+            case 'number':
+              val = parseFloat( arg ?? 0 );
+              break;
+            case 'string':
+            default:
+              val = arg ?? '';
+          }
         }
       }
-      parsed.push(val);
+      parsed.push( val );
     }
 
     if (
       this.parent &&
       this.parent.supportsMultiple &&
-      this.parent.instanceName != parsed[0]
+      this.parent.instanceName != parsed[ 0 ]
     )
       return false;
 
-    if (this.parent && this.parent.supportsMultiple) parsed.splice(0);
+    if ( this.parent && this.parent.supportsMultiple ) parsed.splice( 0 );
 
-    this.callback(ppInstance, ...parsed);
+    this.callback( ppInstance, ...parsed );
     return true;
   }
 }
 
 class ModuleTriggerArg {
-  constructor(name = '', type = 'number', description = '', optional = false) {
+  constructor ( name = '', type = 'number', description = '', optional = false ) {
     this.name = name;
     this.type = type;
     this.description = description;
     this.optional = optional == true;
     this.typed_name = `${name}_${type}`;
     this.help = '';
-    switch (this.type) {
+    switch ( this.type ) {
       case 'number':
-        this.example = (Math.random() * 100).toFixed(0);
+        this.example = ( Math.random() * 100 ).toFixed( 0 );
         this.help = 'numbers can be integers or decimals, positive or negative';
         break;
       case 'json':
@@ -266,7 +268,7 @@ module.exports = { Module, ModuleTrigger, ModuleTriggerArg, GlobalModule };
 
 /* PEG DOESN'T WORK PROPERLY
 {
-	function makeCode(type, tag, args) {return {type, tag, args};}
+  function makeCode(type, tag, args) {return {type, tag, args};}
 }
 
 
@@ -287,9 +289,9 @@ Expression
 
 LongCode
  = Whitespace '[' stag:Tag ']' content:$(!'[/' .)* '[/' etag:Tag ']' Whitespace {
-		 if (stag != etag) throw new Error('tags do not match');
-		 return makeCode('long',stag, [content]);
-	 }
+     if (stag != etag) throw new Error('tags do not match');
+     return makeCode('long',stag, [content]);
+   }
 
 ShortCode
  = Whitespace tag:Tag '[' args:Args ']' Whitespace {return makeCode('short', tag, args); }
