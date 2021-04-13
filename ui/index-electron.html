@@ -455,20 +455,15 @@
             <h3>Current Presentation</h3>
             <div class="presentation">
               <div
-                class="slidegroup"
-                v-for="group in pro_status.currentPresentation.presentationSlideGroups"
+                class="slide"
+                :class="{current: slide.current}"
+                :key="index"
+                v-for="slide, index in flatSlidesWithGroup"
+                @click="trigger_slide(index)"
               >
-                <div
-                  class="slide"
-                  :class="{current: index == currentSlideIndex}"
-                  :key="index"
-                  v-for="slide, index in group.groupSlides"
-                  @click="trigger_slide(index)"
-                >
-                  <img
-                    v-bind:src="`data:image/jpeg;base64,${slide.slideImage}`"
-                  />
-                </div>
+                <img
+                  v-bind:src="`data:image/jpeg;base64,${slide.slideImage}`"
+                />
               </div>
             </div>
           </div>
@@ -639,6 +634,21 @@
               this.logs.splice(0, this.logs.length - 8);
             }
             return this.logs.join('\n');
+          },
+          flatSlidesWithGroup() {
+            let retval = [];
+            let counter = 0;
+            for (let group of this.pro_status.currentPresentation
+              .presentationSlideGroups) {
+              for (let slide of group.groupSlides) {
+                slide.groupColor = group.groupColor;
+                slide.groupName = group.groupName;
+                slide.slideIndex = counter++;
+                slide.current = slide.slideIndex == this.currentSlideIndex;
+                retval.push(slide);
+              }
+            }
+            return retval;
           },
         },
         methods: {
