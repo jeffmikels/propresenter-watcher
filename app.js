@@ -44,12 +44,12 @@ const { CompanionController } = require( './modules/companion-controller.js' );
 const { MidiController } = require( './modules/midi-controller.js' );
 const { OnyxController } = require( './modules/onyx-controller.js' );
 const { OBSController } = require( './modules/obs-controller.js' );
+const { HTTPController } = require( "./modules/http-controller.js" );
 
 // arbitrary controllers for unknown products that support standard protocols
+// const { TCPController } = require( "./modules/tcp-controller.js" );
 // const { SocketIOController } = require( './modules/socketio-controller.js' );
 // const { WebSocketController } = require( "./modules/websocket-controller.js" );
-// const { HTTPController } = require( "./modules/http-controller.js" );
-// const { TCPController } = require( "./modules/tcp-controller.js" );
 
 // put modules into various structures to make access easier
 
@@ -61,9 +61,9 @@ modulesByName[ CompanionController.name ] = CompanionController;
 modulesByName[ MidiController.name ] = MidiController;
 modulesByName[ OnyxController.name ] = OnyxController;
 modulesByName[ OBSController.name ] = OBSController;
+modulesByName[ HTTPController.name ] = HTTPController;
 // modulesByName[ SocketIOController.name ] = SocketIOController;
 // modulesByName[ WebSocketController.name ] = WebSocketController;
-// modulesByName[ HTTPController.name ] = HTTPController;
 // modulesByName[ TCPController.name ] = TCPController;
 
 // this will keep a registration of all the enabled and configured controllers
@@ -100,7 +100,7 @@ configuredControllers.forEach( ( e ) => ( configuredControllersByUuid[ e.uuid ] 
 // configuration file. Each of them should have created their own instances by now
 // and each of them should manage their own lifecycle
 
-// ----- THE LOGGER SETTINGS ARE DIFFERENT ------
+// ----- THE LOGGER SETTINGS WORK DIFFERENTLY ------
 let Log = console.log;
 if ( config.USEWEBLOG ) {
 	const WebLogger = require( './modules/web-logger.js' );
@@ -111,7 +111,8 @@ if ( config.USEWEBLOG ) {
 	};
 }
 
-// special triggers for custom logging
+// special triggers on the "Global" module
+// triggers for for custom logging
 globalController.triggers.push(
 	new ModuleTrigger(
 		'log',
@@ -179,7 +180,7 @@ configuredTriggers.forEach( ( e ) => ( configuredTriggersByUuid[ e.uuid ] = e ) 
 // - MAIN STATE VARIABLES COME NEXT
 // --------------------------------
 
-let pro = ProController.master;
+let pro = ProController.master; // returns null or the master instance if there is one
 let allow_triggers = true;
 
 let lower3 = {

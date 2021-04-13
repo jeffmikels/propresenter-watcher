@@ -1,44 +1,44 @@
 // WS module doesn't work in browsers
-const { EventEmitter } = require('ws');
-const WebSocket = require('ws');
+const { EventEmitter } = require( 'ws' );
+const WebSocket = require( 'ws' );
 
-const { Module, ModuleTrigger, ModuleTriggerArg } = require('./module.js');
-const { hms2secs, timestring2secs, markdown } = require('../helpers.js');
+const { Module, ModuleTrigger, ModuleTriggerArg } = require( './module.js' );
+const { hms2secs, timestring2secs, markdown } = require( '../helpers.js' );
 
 class ProController extends Module {
   static name = 'pro';
   static niceName = 'ProPresenter Controller';
   static supportsMultiple = true;
   static get master() {
-    for (let i of ProController.instances) {
-      if (i.master) return i;
+    for ( let i of ProController.instances ) {
+      if ( i.master ) return i;
     }
-    return null;
+    // looks like there is no master instance... create it now
+    return new ProController( {} );
   }
 
-  static create(config) {
-    return new ProController(config);
+  static create( config ) {
+    return new ProController( config );
   }
 
   get slides() {
     return this.sd.slides;
   }
 
-  constructor(config) {
-    super(config);
+  constructor ( config ) {
+    super( config );
 
     let { host, port, sd_pass, version = 6, remote_pass } = config;
 
     // store in the static instances list
     this.id = ProController.instances.length;
-    ProController.instances.push(this);
+    ProController.instances.push( this );
 
     // setup object properties
     this.master = this.id == 0; // the first instance is by default the master instance
     this.follower = false;
     // this.options = options;
 
-    this.lower3 = { text: '', html: '', caption: '' };
     this.host = host;
     this.port = port;
     this.version = version;
@@ -46,8 +46,8 @@ class ProController extends Module {
     this.remote_pass = remote_pass;
 
     // setup connections
-    this.sd = new ProSDClient(host, port, sd_pass, version, this);
-    this.remote = new ProRemoteClient(host, port, remote_pass, version, this);
+    this.sd = new ProSDClient( host, port, sd_pass, version, this );
+    this.remote = new ProRemoteClient( host, port, remote_pass, version, this );
 
     // exposes the names of the events available on this emitter
     this.events = [
@@ -61,23 +61,23 @@ class ProController extends Module {
       'remotedata',
     ];
 
-    this.sd.on('update', () => this.emit('sdupdate'));
-    this.sd.on('data', (data) => this.emit('sddata', data));
-    this.sd.on('msgupdate', (data) => this.emit('msgupdate', data));
-    this.sd.on('sysupdate', (data) => this.emit('sysupdate', data));
-    this.sd.on('slideupdate', (data) => this.emit('slideupdate', data));
-    this.sd.on('timersupdate', (data) => this.emit('timersupdate', data));
+    this.sd.on( 'update', () => this.emit( 'sdupdate' ) );
+    this.sd.on( 'data', ( data ) => this.emit( 'sddata', data ) );
+    this.sd.on( 'msgupdate', ( data ) => this.emit( 'msgupdate', data ) );
+    this.sd.on( 'sysupdate', ( data ) => this.emit( 'sysupdate', data ) );
+    this.sd.on( 'slideupdate', ( data ) => this.emit( 'slideupdate', data ) );
+    this.sd.on( 'timersupdate', ( data ) => this.emit( 'timersupdate', data ) );
 
-    this.remote.on('update', () => this.emit('remoteupdate'));
-    this.remote.on('data', (data) => {
-      this.emit('remotedata', data);
-      if (this.master) {
-        for (let i of ProController.instances) {
-          if (i.id == this.id) continue;
-          if (i.follower) i.remote.send(data);
+    this.remote.on( 'update', () => this.emit( 'remoteupdate' ) );
+    this.remote.on( 'data', ( data ) => {
+      this.emit( 'remotedata', data );
+      if ( this.master ) {
+        for ( let i of ProController.instances ) {
+          if ( i.id == this.id ) continue;
+          if ( i.follower ) i.remote.send( data );
         }
       }
-    });
+    } );
 
     this._registerDefaultTriggers();
   }
@@ -92,13 +92,11 @@ class ProController extends Module {
   status() {
     let r = {
       master: this.master,
-      follower: this.follower,
-      lower3: this.lower3,
+      connected: this.connected,
       ...this.sd.status(),
     };
     // r.master = this.master;
     // r.follower = this.follower;
-    // r.lower3 = this.lower3;
     // r.slides = this.slides;
     // r.sd = this.sd.status();
     return r;
@@ -114,37 +112,42 @@ class ProController extends Module {
   _registerDefaultTriggers() {
     this.triggers = [];
 
-    // register default triggers
-    this.registerTrigger(
-      new ModuleTrigger(
-        'master',
-        'flags the source propresenter instance as the master instance',
-        [],
-        (caller) => {
-          caller.master = true;
-          caller.follower = false;
-          caller.emit('update');
-        }
-      )
-    );
+    // // register default triggers
+    // this.registerTrigger(
+    //   new ModuleTrigger(
+    //     'master',
+    //     'flags the source propresenter instance as the master instance',
+    //     [],
+    //     (caller) => {
+    //       caller.master = true;
+    //       caller.follower = false;
+    //       caller.emit('update');
+    //     }
+    //   )
+    // );
 
-    this.registerTrigger(
-      new ModuleTrigger(
-        'follower',
-        'flags the source propresenter instance as a follower instance',
-        [],
-        (caller) => {
-          caller.master = false;
-          caller.follower = true;
-          caller.emit('update');
-        }
-      )
-    );
+    // this.registerTrigger(
+    //   new ModuleTrigger(
+    //     'follow',
+    //     'flags the source propresenter instance as a follower instance',
+    //     [
+    //       new ModuleTriggerArg(
+    //         'onoff',
+    //         'bool',
+    //         'turn following on or off for this instance',
+    //       )
+    //     ],
+    //     (caller, onoff) => {
+    //       caller.follower = onoff == true;
+    //       caller.emit('update');
+    //     }
+    //   )
+    // );
   }
 }
 
 class ProSlide {
-  constructor(uid = '', text = '', notes = '') {
+  constructor ( uid = '', text = '', notes = '' ) {
     this.uid = uid;
     this.text = text;
     this.notes = notes;
@@ -153,7 +156,7 @@ class ProSlide {
 
 // listens to ProPresenter as a stage display client
 class ProSDClient extends EventEmitter {
-  constructor(host, port, password, version = 6, parent) {
+  constructor ( host, port, password, version = 6, parent ) {
     super();
     this.host = host;
     this.port = port;
@@ -174,17 +177,17 @@ class ProSDClient extends EventEmitter {
       next: new ProSlide(),
     };
 
-    this.ondata = (data) => this.emit('data', data, this);
-    this.onmsgupdate = (data) => this.emit('msgupdate', data, this);
-    this.onsysupdate = (data) => this.emit('sysupdate', data, this);
-    this.onslideupdate = (data) => this.emit('slideupdate', data, this);
-    this.ontimersupdate = (data) => this.emit('timersupdate', data, this);
+    this.ondata = ( data ) => this.emit( 'data', data, this );
+    this.onmsgupdate = ( data ) => this.emit( 'msgupdate', data, this );
+    this.onsysupdate = ( data ) => this.emit( 'sysupdate', data, this );
+    this.onslideupdate = ( data ) => this.emit( 'slideupdate', data, this );
+    this.ontimersupdate = ( data ) => this.emit( 'timersupdate', data, this );
 
     this.connect();
   }
 
   notify() {
-    this.emit('update', this);
+    this.emit( 'update', this );
   }
 
   status() {
@@ -198,53 +201,53 @@ class ProSDClient extends EventEmitter {
     };
   }
 
-  reconnect(delay = 0) {
-    this.parent.log(`Attempting reconnect in ${delay} seconds.`);
-    clearTimeout(this.reconnectTimeout);
-    this.reconnectTimeout = setTimeout(() => {
+  reconnect( delay = 0 ) {
+    this.parent.log( `Attempting reconnect in ${delay} seconds.` );
+    clearTimeout( this.reconnectTimeout );
+    this.reconnectTimeout = setTimeout( () => {
       this.connect();
-    }, delay * 1000);
+    }, delay * 1000 );
   }
 
   connect() {
     this.connected = false;
     this.active = false;
 
-    clearTimeout(this.reconnectTimeout);
+    clearTimeout( this.reconnectTimeout );
 
-    if (this.ws) this.ws.terminate();
-    this.ws = new WebSocket(`ws://${this.host}:${this.port}/stagedisplay`);
+    if ( this.ws ) this.ws.terminate();
+    this.ws = new WebSocket( `ws://${this.host}:${this.port}/stagedisplay` );
 
-    this.ws.on('error', (err) => {
-      this.parent.log('ProPresenter WebSocket Error:');
+    this.ws.on( 'error', ( err ) => {
+      this.parent.log( 'ProPresenter WebSocket Error:' );
       // this.parent.log(err);
       this.ws.terminate();
-      this.reconnect(30);
+      this.reconnect( 30 );
       this.notify();
-    });
+    } );
 
-    this.ws.on('message', (data) => {
-      this.check(JSON.parse(data));
+    this.ws.on( 'message', ( data ) => {
+      this.check( JSON.parse( data ) );
       this.notify();
-    });
+    } );
 
-    this.ws.on('open', () => {
+    this.ws.on( 'open', () => {
       this.connected = true;
       this.authenticate();
       this.notify();
-    });
+    } );
 
-    this.ws.on('close', () => {
+    this.ws.on( 'close', () => {
       // this.ws.terminate();
-      this.reconnect(10);
+      this.reconnect( 10 );
       this.connected = false;
       this.active = false;
       this.notify();
-    });
+    } );
   }
 
-  send(Obj) {
-    this.ws.send(JSON.stringify(Obj));
+  send( Obj ) {
+    this.ws.send( JSON.stringify( Obj ) );
   }
 
   authenticate() {
@@ -253,17 +256,17 @@ class ProSDClient extends EventEmitter {
       ptl: this.version * 100 + 10,
       acn: 'ath',
     };
-    this.send(auth);
+    this.send( auth );
   }
 
-  check(data) {
-    this.parent.log(data);
+  check( data ) {
+    this.parent.log( data );
     let newdata = {};
-    switch (data.acn) {
+    switch ( data.acn ) {
       case 'ath':
         //{"acn":"ath","ath":true/false,"err":""}
-        if (data.ath) {
-          this.parent.log('ProPresenter Listener is Connected');
+        if ( data.ath ) {
+          this.parent.log( 'ProPresenter Listener is Connected' );
           this.active = true;
           newdata = { type: 'authentication', data: true };
         } else {
@@ -273,28 +276,28 @@ class ProSDClient extends EventEmitter {
         }
         break;
       case 'tmr':
-        this.timers[data.uid] = {
+        this.timers[ data.uid ] = {
           uid: data.uid,
           text: data.txt,
-          seconds: hms2secs(data.txt),
+          seconds: hms2secs( data.txt ),
         };
-        newdata = { type: 'timer', data: this.timers[data.uid] };
-        if (this.ontimersupdate) this.ontimersupdate(this.timers[data.uid]);
+        newdata = { type: 'timer', data: this.timers[ data.uid ] };
+        if ( this.ontimersupdate ) this.ontimersupdate( this.timers[ data.uid ] );
         break;
       case 'sys':
         // { "acn": "sys", "txt": " 11:17 AM" }
         this.system_time = {
           text: data.txt,
-          seconds: timestring2secs(data.txt),
+          seconds: timestring2secs( data.txt ),
         };
         newdata = { type: 'systime', data: this.system_time };
-        if (this.onsysupdate) this.onsysupdate(this.system_time);
+        if ( this.onsysupdate ) this.onsysupdate( this.system_time );
         break;
       case 'msg':
         // { acn: 'msg', txt: 'Test' }
         this.stage_message = data.txt;
         newdata = { type: 'message', data: this.stage_message };
-        if (this.onmsgupdate) this.onmsgupdate(this.stage_message);
+        if ( this.onmsgupdate ) this.onmsgupdate( this.stage_message );
         break;
       case 'fv':
         // we just got stage display slide information
@@ -307,8 +310,8 @@ class ProSDClient extends EventEmitter {
         // csn: current slide notes
         // ns: next slide
         // nsn: next slide notes
-        for (let blob of data.ary) {
-          switch (blob.acn) {
+        for ( let blob of data.ary ) {
+          switch ( blob.acn ) {
             case 'cs':
               this.slides.current.uid = blob.uid;
               this.slides.current.text = blob.txt;
@@ -326,15 +329,15 @@ class ProSDClient extends EventEmitter {
           }
         }
         newdata = { type: 'slides', data: this.slides };
-        if (this.onslideupdate) this.onslideupdate(this.slides);
+        if ( this.onslideupdate ) this.onslideupdate( this.slides );
     }
-    if (this.ondata) this.ondata(newdata, this);
+    if ( this.ondata ) this.ondata( newdata, this );
   }
 }
 
 // incomplete at the moment
 class ProRemoteClient extends EventEmitter {
-  constructor(host, port, password, version = 6, parent) {
+  constructor ( host, port, password, version = 6, parent ) {
     super();
     this.connected = false;
     this.controlling = false;
@@ -343,21 +346,21 @@ class ProRemoteClient extends EventEmitter {
     this.version = version;
     this.parent = parent;
 
-    this.ws = new WebSocket(`ws://${host}:${port}/remote`);
+    this.ws = new WebSocket( `ws://${host}:${port}/remote` );
 
-    this.ws.on('message', (data) => {
-      this.handleData(JSON.parse(data));
+    this.ws.on( 'message', ( data ) => {
+      this.handleData( JSON.parse( data ) );
       this.notify();
-    });
-    this.ws.on('open', () => {
+    } );
+    this.ws.on( 'open', () => {
       this.authenticate();
       this.notify();
-    });
-    this.ws.on('close', () => {
+    } );
+    this.ws.on( 'close', () => {
       this.connected = false;
       this.controlling = false;
       this.notify();
-    });
+    } );
 
     this.callbacks = {};
 
@@ -372,19 +375,19 @@ class ProRemoteClient extends EventEmitter {
 
   // notify is used for any status updates
   notify() {
-    this.emit('update', this);
+    this.emit( 'update', this );
   }
 
-  send(Obj, callback = null) {
+  send( Obj, callback = null ) {
     // register callback if there is one.
-    if (typeof callback == 'function') {
+    if ( typeof callback == 'function' ) {
       // fix api bug
       let responseAction = Obj.action;
-      if (Obj.action == 'presentationRequest')
+      if ( Obj.action == 'presentationRequest' )
         responseAction = 'presentationCurrent';
-      this.callbacks[responseAction] = callback;
+      this.callbacks[ responseAction ] = callback;
     }
-    this.ws.send(JSON.stringify(Obj));
+    this.ws.send( JSON.stringify( Obj ) );
   }
 
   authenticate() {
@@ -393,18 +396,18 @@ class ProRemoteClient extends EventEmitter {
       protocol: this.version * 100,
       action: 'authenticate',
     };
-    this.send(auth);
+    this.send( auth );
   }
 
-  flattenPlaylist(playlistObj) {
+  flattenPlaylist( playlistObj ) {
     let flattened = [];
-    switch (playlistObj.playlistType) {
+    switch ( playlistObj.playlistType ) {
       case 'playlistTypePlaylist':
         flattened = playlistObj.playlist;
         break;
       case 'playlistTypeGroup':
-        for (let playlist of playlistObj.playlist) {
-          flattened.push(...this.flattenPlaylist(playlist));
+        for ( let playlist of playlistObj.playlist ) {
+          flattened.push( ...this.flattenPlaylist( playlist ) );
         }
         break;
     }
@@ -418,22 +421,22 @@ class ProRemoteClient extends EventEmitter {
     this.getCurrentSlideIndex();
   }
 
-  handleData(data) {
-    this.parent.log(data);
+  handleData( data ) {
+    this.parent.log( data );
 
     // process data for this class instance
-    switch (data.action) {
+    switch ( data.action ) {
       case 'authenticate':
-        if (data.authenticated == 1) this.connected = true;
-        if (data.controller == 1) this.controlling = true;
+        if ( data.authenticated == 1 ) this.connected = true;
+        if ( data.controller == 1 ) this.controlling = true;
 
-        if (this.connected) this.loadStatus();
+        if ( this.connected ) this.loadStatus();
         break;
       case 'libraryRequest':
         this.status.library = data.library;
         break;
       case 'playlistRequestAll':
-        this.status.playlists = this.flattenPlaylist(data.playlistAll);
+        this.status.playlists = this.flattenPlaylist( data.playlistAll );
         break;
       case 'presentationCurrent':
         this.status.currentPresentation = data.presentation;
@@ -443,31 +446,31 @@ class ProRemoteClient extends EventEmitter {
         break;
       case 'presentationTriggerIndex':
         this.status.currentSlideIndex = +data.slideIndex;
-        if (this.status.currentPresentation == null) {
+        if ( this.status.currentPresentation == null ) {
           this.getPresentation();
         }
     }
 
     // handle update stream
-    this.emit('data', data, this);
+    this.emit( 'data', data, this );
 
     // handle callbacks
-    if (typeof this.callbacks[data.action] == 'function') {
-      this.callbacks[data.action](data);
-      delete this.callbacks[data.action];
+    if ( typeof this.callbacks[ data.action ] == 'function' ) {
+      this.callbacks[ data.action ]( data );
+      delete this.callbacks[ data.action ];
     }
   }
 
-  getLibrary(callback = null) {
-    this.send({ action: 'libraryRequest' }, callback);
+  getLibrary( callback = null ) {
+    this.send( { action: 'libraryRequest' }, callback );
   }
 
-  getPlaylists(callback = null) {
-    this.send({ action: 'playlistRequestAll' }, callback);
+  getPlaylists( callback = null ) {
+    this.send( { action: 'playlistRequestAll' }, callback );
   }
 
-  getPresentation(path = null, quality = 200, callback = null) {
-    if (path == null) {
+  getPresentation( path = null, quality = 200, callback = null ) {
+    if ( path == null ) {
       this.send(
         {
           action: 'presentationCurrent',
@@ -487,14 +490,14 @@ class ProRemoteClient extends EventEmitter {
     }
   }
 
-  getCurrentSlideIndex(callback = null) {
-    this.send({ action: 'presentationSlideIndex' }, callback);
+  getCurrentSlideIndex( callback = null ) {
+    this.send( { action: 'presentationSlideIndex' }, callback );
   }
 
-  triggerSlide(index = 0, path = null, callback = null) {
-    if (!this.controlling) return false;
-    if (path == null && this.status.currentPresentation == null) return false;
-    if (path == null)
+  triggerSlide( index = 0, path = null, callback = null ) {
+    if ( !this.controlling ) return false;
+    if ( path == null && this.status.currentPresentation == null ) return false;
+    if ( path == null )
       path = this.status.currentPresentation.presentationCurrentLocation;
     this.send(
       {
@@ -507,19 +510,19 @@ class ProRemoteClient extends EventEmitter {
     return true;
   }
 
-  next(callback = null) {
-    if (this.status.currentPresentation == null) return false;
-    if (this.status.currentSlideIndex == null) return false;
+  next( callback = null ) {
+    if ( this.status.currentPresentation == null ) return false;
+    if ( this.status.currentSlideIndex == null ) return false;
     let nextIndex = this.status.currentSlideIndex + 1;
-    return this.triggerSlide(nextIndex, null, callback);
+    return this.triggerSlide( nextIndex, null, callback );
   }
 
-  prev(callback = null) {
-    if (this.status.currentPresentation == null) return false;
-    if (this.status.currentSlideIndex == null) return false;
+  prev( callback = null ) {
+    if ( this.status.currentPresentation == null ) return false;
+    if ( this.status.currentSlideIndex == null ) return false;
     let nextIndex = this.status.currentSlideIndex - 1;
-    if (nextIndex < 0) nextIndex = 0;
-    return this.triggerSlide(nextIndex, null, callback);
+    if ( nextIndex < 0 ) nextIndex = 0;
+    return this.triggerSlide( nextIndex, null, callback );
   }
 }
 
