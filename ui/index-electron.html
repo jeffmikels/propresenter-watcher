@@ -344,22 +344,27 @@
         border: 1px solid var(--bright);
       }
 
-      #content-pane .presentation,
-      #content-pane .slidegroup {
+      #content-pane .presentation {
         display: flex;
         flex-flow: row wrap;
         justify-content: space-evenly;
       }
+      #content-pane .presentation .slide-group-color {
+        margin-bottom: 10px;
+        border-radius: 6px;
+        padding: 2px;
+      }
+
       #content-pane .presentation .slide {
         width: 212px;
         padding: 6px;
-        margin-bottom: 10px;
         border: 0;
         background: var(--medium);
         border-radius: 6px;
       }
       #content-pane .presentation .slide.current {
-        background: orange;
+        background: orange !important;
+        box-shadow: 0px 0px 4px orange;
       }
     </style>
     <meta charset="UTF-8" />
@@ -455,15 +460,22 @@
             <h3>Current Presentation</h3>
             <div class="presentation">
               <div
-                class="slide"
-                :class="{current: slide.current}"
+                class="slide-group-color"
                 :key="index"
+                :style="{backgroundColor: slide.groupColorStyle}"
                 v-for="slide, index in flatSlidesWithGroup"
                 @click="trigger_slide(index)"
               >
-                <img
-                  v-bind:src="`data:image/jpeg;base64,${slide.slideImage}`"
-                />
+                <div
+                  class="slide"
+                  :class="{current: slide.current}"
+                  :style="{backgroundColor: slide.slideColorStyle}"
+                >
+                  <img
+                    class="slide-image"
+                    v-bind:src="`data:image/jpeg;base64,${slide.slideImage}`"
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -642,8 +654,10 @@
               .presentationSlideGroups) {
               for (let slide of group.groupSlides) {
                 slide.groupColor = group.groupColor;
+                slide.groupColorStyle = this.makeRGBA(group.groupColor);
                 slide.groupName = group.groupName;
-                slide.slideIndex = counter++;
+                slide.slideColorStyle = this.makeRGBA(slide.slideColor);
+                slide.slideIndex = counter++; // convert to number
                 slide.current = slide.slideIndex == this.currentSlideIndex;
                 retval.push(slide);
               }
@@ -652,6 +666,12 @@
           },
         },
         methods: {
+          makeRGBA(proColorString) {
+            let colorArray = proColorString.split(' ');
+            let [r, g, b] = colorArray.slice(0, 3).map((e) => +e * 255);
+            let a = colorArray[3];
+            return `rgba(${[r, g, b, a].join(',')})`;
+          },
           isEmpty(obj) {
             return Object.keys(obj).length == 0;
           },
@@ -757,7 +777,7 @@
                 case 'remotedata':
                   switch (data.action) {
                     case 'presentationTriggerIndex':
-                      this.currentSlideIndex = data.slideIndex;
+                      this.currentSlideIndex = parseInt(data.slideIndex);
                       let newpath = data.presentationPath;
                       if (newpath != this.presentationPath) {
                         ws.bettersend('pro_status');
