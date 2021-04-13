@@ -446,8 +446,8 @@ class ProRemoteClient extends EventEmitter {
         break;
       case 'presentationTriggerIndex':
         this.status.currentSlideIndex = +data.slideIndex;
-        if ( this.status.currentPresentation == null ) {
-          this.getPresentation();
+        if ( this.status.currentPresentation != data.presentationPath ) {
+          this.getPresentation( data.presentationPath );
         }
     }
 

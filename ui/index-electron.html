@@ -758,7 +758,11 @@
                   switch (data.action) {
                     case 'presentationTriggerIndex':
                       this.currentSlideIndex = data.slideIndex;
-                      this.presentationPath = data.presentationPath;
+                      let newpath = data.presentationPath;
+                      if (newpath != this.presentationPath) {
+                        ws.bettersend('pro_status');
+                        this.presentationPath = newpath;
+                      }
                       break;
                   }
 
