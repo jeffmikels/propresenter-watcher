@@ -3,10 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta http-equiv="x-ua-compatible" content="ie=edge" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1, shrink-to-fit=no"
-    />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
     <title>ProPresenter Master Control</title>
     <style media="screen">
       html,
@@ -18,9 +15,9 @@
       }
       body {
         /* system fonts https://flaviocopes.com/css-system-fonts/#enter-system-fonts */
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
-          'Oxygen', 'Ubuntu', 'Helvetica Neue', Arial, sans-serif,
-          'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu',
+          'Helvetica Neue', Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+          'Segoe UI Symbol';
         background: rgba(94, 94, 94, 1);
         color: ivory;
 
@@ -43,9 +40,9 @@
       input,
       button,
       textarea {
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
-          'Oxygen', 'Ubuntu', 'Helvetica Neue', Arial, sans-serif,
-          'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu',
+          'Helvetica Neue', Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+          'Segoe UI Symbol';
       }
 
       #app {
@@ -375,16 +372,12 @@
       <!-- STATUS BAR ITEMS -->
       <div id="status-bar">
         <!-- PRO CLOCK -->
-        <clock v-if="pro_status.system_time"
-          >{{ pro_status.system_time.text }}</clock
-        >
+        <clock v-if="pro_status.system_time">{{ pro_status.system_time.text }}</clock>
 
         <!-- PRO CONNECTION STATUS -->
         <status v-if="connected">
           PP:
-          <span
-            :class="{active: pro_status.active, inactive: !pro_status.active}"
-          >
+          <span :class="{active: pro_status.active, inactive: !pro_status.active}">
             {{ pro_status.active ? "ACTIVE" : "INACTIVE" }}
           </span>
         </status>
@@ -427,18 +420,14 @@
             <h3>Current Slide</h3>
             <div class="box">
               {{ pro_status.slides.current.text }}
-              <div class="note">
-                {{ pro_status.slides.current.notes.replace(/\n/,' &bull; ') }}
-              </div>
+              <div class="note">{{ pro_status.slides.current.notes.replace(/\n/,' &bull; ') }}</div>
             </div>
           </div>
           <div class="slide next_slide" v-if="pro_status.slides">
             <h3>Next Slide</h3>
             <div class="box">
               {{ pro_status.slides.next.text }}
-              <div class="note">
-                {{ pro_status.slides.next.notes.replace(/\n/,' &bull; ') }}
-              </div>
+              <div class="note">{{ pro_status.slides.next.notes.replace(/\n/,' &bull; ') }}</div>
             </div>
           </div>
 
@@ -453,10 +442,7 @@
             </div>
           </div>
 
-          <div
-            class="presentation-section"
-            v-if="pro_status.currentPresentation"
-          >
+          <div class="presentation-section" v-if="pro_status.currentPresentation">
             <h3>Current Presentation</h3>
             <div class="presentation">
               <div
@@ -488,10 +474,7 @@
             <div v-if="! isEmpty(controller.config)">
               <h4>{{controller.niceName}}</h4>
               <ul>
-                <li
-                  v-for="value, key in controller.config"
-                  v-if="key != 'triggers'"
-                >
+                <li v-for="value, key in controller.config" v-if="key != 'triggers'">
                   <label class="text">{{key}}</label>
                   <input @change="update_config" v-model="value" />
                 </li>
@@ -506,11 +489,7 @@
           <ul>
             <li>
               <label>
-                <input
-                  type="checkbox"
-                  v-model="allow_triggers"
-                  @change="update_allow_triggers"
-                />
+                <input type="checkbox" v-model="allow_triggers" @change="update_allow_triggers" />
                 Enable / Disable All Triggers ({{ triggerstatus }})
               </label>
             </li>
@@ -526,10 +505,7 @@
                   v-model="controller.enabled"
                 />
                 <div class="trigger-meta">
-                  <div
-                    class="trigger-title"
-                    style="display: inline-block; vertical-align: middle"
-                  >
+                  <div class="trigger-title" style="display: inline-block; vertical-align: middle">
                     <h4>
                       {{ controller.niceName }}
                       <span v-if="controller.requiresInstance"
@@ -561,31 +537,24 @@
                   v-model="trigger.enabled"
                 />
                 <div class="trigger-meta">
-                  <div
-                    class="trigger-title"
-                    style="display: inline-block; vertical-align: middle"
-                  >
+                  <div class="trigger-title" style="display: inline-block; vertical-align: middle">
                     <pre>[{{trigger.label}}]</pre>
-                    <div class="trigger-description">
-                      {{trigger.description}}
-                    </div>
+                    <div class="trigger-description">{{trigger.description}}</div>
                     <div class="trigger-description">{{trigger.extrahelp}}</div>
                     <div v-if="trigger.args.length > 0">
                       <h5>Arguments:</h5>
                       <div style="margin-left: 10px">
                         <div v-for="arg in trigger.args" class="trigger-arg">
-                          &lt;{{arg.name}}:{{arg.type}}&gt;
-                          ({{arg.description}})<br /><small>{{arg.help}}</small>
+                          &lt;{{arg.name}}:{{arg.type}}&gt; ({{arg.description}})<br /><small
+                            >{{arg.help}}</small
+                          >
                         </div>
                       </div>
                     </div>
                     <div v-if="trigger.examples.length > 0">
                       <h5>Examples:</h5>
                       <div style="margin-left: 10px">
-                        <div
-                          class="trigger-example"
-                          v-for="example in trigger.examples"
-                        >
+                        <div class="trigger-example" v-for="example in trigger.examples">
                           <pre><code>{{example}}</code></pre>
                         </div>
                       </div>
@@ -632,11 +601,7 @@
         },
         computed: {
           state() {
-            return this.connected
-              ? 'connected'
-              : this.connecting
-              ? 'connecting'
-              : 'disconnected';
+            return this.connected ? 'connected' : this.connecting ? 'connecting' : 'disconnected';
           },
           triggerstatus() {
             return this.allow_triggers ? 'enabled' : 'disabled';
@@ -650,8 +615,7 @@
           flatSlidesWithGroup() {
             let retval = [];
             let counter = 0;
-            for (let group of this.pro_status.currentPresentation
-              .presentationSlideGroups) {
+            for (let group of this.pro_status.currentPresentation.presentationSlideGroups) {
               for (let slide of group.groupSlides) {
                 slide.groupColor = group.groupColor;
                 slide.groupColorStyle = this.makeRGBA(group.groupColor);
@@ -752,9 +716,7 @@
                   this.config = data.config;
                   this.allow_triggers = data.allow_triggers;
                   if (this.first_load) {
-                    this.state = data.pro_status.connected
-                      ? 'home'
-                      : 'configuration';
+                    this.state = data.pro_status.connected ? 'home' : 'configuration';
                     this.first_load = false;
                     this.loaded = true;
                     this.loading = false;

@@ -9,12 +9,7 @@
 // general configuration
 const config = require( './config.js' );
 const { markdown } = require( './helpers.js' );
-const {
-	Module,
-	ModuleTrigger,
-	ModuleTriggerArg,
-	GlobalModule,
-} = require( './modules/module.js' );
+const { Module, ModuleTrigger, ModuleTriggerArg, GlobalModule } = require( './modules/module.js' );
 
 // ----- MODULES AND TRIGGERS --------------
 
@@ -36,9 +31,7 @@ const globalController = new GlobalModule();
 const { ProController } = require( './modules/pro.js' );
 
 // Controller Modules for Known Products
-const {
-	JMLiveEventController,
-} = require( './modules/jm-live-event-controller.js' );
+const { JMLiveEventController } = require( './modules/jm-live-event-controller.js' );
 const { VmixController } = require( './modules/vmix-controller.js' );
 const { CompanionController } = require( './modules/companion-controller.js' );
 const { MidiController } = require( './modules/midi-controller.js' );
