@@ -74,6 +74,9 @@ const config = {
 			port: 4,
 		},
 
+    // enable the built-in http triggers
+    http: {},
+
 		// JM_APPS LIVE EVENT SETTINGS
 		jm_app_live_event: {
 			url: "https://example.com", // no final slash
