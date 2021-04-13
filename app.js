@@ -200,6 +200,7 @@ let lower3 = {
 pro.on( 'sysupdate', ( e ) => {
 	Log( e );
 	if ( allow_triggers ) fireTriggers( '~sysupdate~', [], pro );
+	broadcast( 'sysupdate', e );
 } );
 
 pro.on( 'timersupdate', ( e ) => {
@@ -209,13 +210,14 @@ pro.on( 'timersupdate', ( e ) => {
 		Log( e );
 	}
 	if ( allow_triggers ) fireTriggers( '~timersupdate~', [], pro );
+	broadcast( 'timersupdate', e );
 } );
 
 pro.on( 'slideupdate', ( data ) => {
 	Log( data );
 	console.log( '--------- PRO SLIDE UPDATE -------------' );
 	console.log( data );
-	broadcast( 'proupdate', data );
+	broadcast( 'slideupdate', data );
 
 	// always update the lower3
 	// later triggers might override this
@@ -243,8 +245,15 @@ pro.on( 'slideupdate', ( data ) => {
 	}
 	console.log( '-----------------------------------' );
 
-	broadcast( 'status', getStatus() );
+	broadcast( 'status', getStatus() ); // contains lower3 data
+	broadcast( 'pro_status', getProStatus() ); // contains proPresenter data
 } );
+
+// pass all events directly through to the frontend
+pro.on( 'sddata', ( data ) => broadcast( 'sddata', data ) );
+pro.on( 'msgupdate', ( data ) => broadcast( 'msgupdate', data ) );
+pro.on( 'remoteupdate', ( data ) => broadcast( 'remoteupdate', data ) );
+pro.on( 'remotedata', ( data ) => broadcast( 'remotedata', data ) );
 
 //  ---- UI SERVER CODE ---
 const fs = require( 'fs' );
@@ -298,6 +307,12 @@ wss.on( 'connection', function connection( ws ) {
 			case 'status':
 				ws.bettersend( 'status', getStatus() );
 				break;
+			case 'pro_status':
+				ws.bettersend( 'pro_status', getProStatus() );
+				break;
+			case 'full_status':
+				ws.bettersend( 'full_status', getFullStatus() );
+				break;
 			case 'lower3':
 				let status = getStatus();
 				ws.bettersend( 'lower3', status.lower3 );
@@ -340,6 +355,11 @@ wss.on( 'connection', function connection( ws ) {
 					configuredTriggersByUuid[ t.uuid ].enabled = t.enabled;
 				}
 				broadcast( 'status', getStatus() );
+				break;
+
+			// PROPRESENTER COMMANDS
+			case 'trigger_slide':
+				pro.remote.triggerSlide( data );
 				break;
 			case 'next_slide':
 				pro.remote.next();
@@ -386,11 +406,19 @@ function getStatus() {
 		lower3.html = pro.slides.current.text;
 		lower3.caption = pro.slides.current.caption;
 	}
-
 	return {
 		config,
 		allow_triggers,
 		lower3,
+		pro_connected: pro.connected,
+	}
+}
+function getProStatus() {
+	return pro.fullStatus();
+}
+function getFullStatus() {
+	return {
+		...getStatus(),
 		pro_status: pro.fullStatus(),
 		controllers: configuredControllers.map( ( e ) => e.getInfo() ),
 		triggers: configuredTriggers.map( ( e ) => e.doc() ),

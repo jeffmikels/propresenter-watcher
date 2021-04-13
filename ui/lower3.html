@@ -1,235 +1,235 @@
 <!DOCTYPE html>
 <html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<meta http-equiv="x-ua-compatible" content="ie=edge" />
-		<meta
-			name="viewport"
-			content="width=device-width, initial-scale=1, shrink-to-fit=no"
-		/>
-		<title>ProPresenter Watcher Lower Third</title>
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="x-ua-compatible" content="ie=edge" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, shrink-to-fit=no"
+    />
+    <title>ProPresenter Watcher Lower Third</title>
 
-		<link rel="preconnect" href="https://fonts.gstatic.com">
-		<link
-			href="https://fonts.googleapis.com/css2?family=Mulish:ital,wght@0,200;0,500;0,800;0,900;1,200;1,500;1,800;1,900&display=swap"
-			rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.gstatic.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Mulish:ital,wght@0,200;0,500;0,800;0,900;1,200;1,500;1,800;1,900&display=swap"
+      rel="stylesheet"
+    />
 
-		<style media="screen">
-			html,
-			body {
-				margin: 0;
-				width: 100%;
-				height: auto;
-				overflow: hidden;
-				background: black;
-				color: ivory;
-				font-family: Mulish, sans-serif;
-				font-weight: 800;
-				box-sizing: border-box;
-			}
-			#lower3 {
-				position: relative;
-				height: 14vw;
-				box-sizing: border-box;
-				padding: 0px 22vw 0px 1vw; /* FOR LOGO ON RIGHT (SECOND ONE WINS)*/
-				padding: 0px 1vw 0px 15vw; /* FOR LOGO ON LEFT  (SECOND ONE WINS) (default) */
-				overflow: hidden;
-				box-sizing:border-box;
-				font-weight: 800;
-				font-size: 60pt;
-				letter-spacing: -1px;
-				text-shadow: 2px 2px 9px rgba(0, 0, 0, 1);        /* BLACK SHADOW (SECOND ONE WINS) */
-				text-shadow:
-					1px  0px 9px rgba(255, 255, 255, .25),
-					0px  1px 9px rgba(255, 255, 255, .25),
-					-1px 0px 9px rgba(255, 255, 255, .25),
-					0px -1px 9px rgba(255, 255, 255, .25);          /* WHITE GLOW (SECOND ONE WINS) */
-				-webkit-text-stroke: 0px black;
-				color: black;
-			}
-			#lower3 img {
-				position: absolute;
-				top: 0;
-				left: 0;
-				width: 100%;
-				height: 14vw;           /* LOWER THIRD ASPECT RATIO IS 100/14 (7.14) */
-				object-fit:cover;
-			}
-			#lower3 #textwrapper {
-				transition: opacity 0.7s;
-				opacity: 0;
-				position: relative;
-				top: 50%;
-				transform: translateY(-50%);
-				line-height: 1;
-				white-space: pre-line;
-			}
-			#lower3 #textwrapper.showtext {
-				opacity: 1;
-			}
-			#lower3 #caption {
-				transition: all 0s;
-				transform: translateX(100%);
-				font-weight:700;
-				font-style: italic;
-				position:absolute;
-				bottom:0px;
-				right: 0px;
-				box-sizing: border-box;
-				padding: 3px 10px 3px 18px;
-				background-color: black;
-				border-radius: 13px 0 0 0;
-				font-size: 14px;
-				line-height: 1em;
-				color:#bed2eb;
-				text-shadow: none;
-	/*				-webkit-text-stroke: 1px #98c6fe;*/
-				text-transform: uppercase;
-			}
-			#lower3.hascaption #caption {
-				transform: translateX(0%);
-				transition: all 1s;
-			}
-			span.blank {
-				color: #ffc552;
-				-webkit-text-stroke: 1px #ffc552;
-				text-shadow: 2px 2px 9px rgba(0, 0, 0, 1);
-				text-transform: uppercase;
-				text-decoration: underline;
-				font-weight: 900;
-				letter-spacing: -2px;
-			}
-			.fade-enter-active, .fade-leave-active {
-				transition: opacity .5s;
-			}
-			.fade-enter, .fade-leave-to /* .fade-leave-active below version 2.1.8 */ {
-				opacity: 0;
-			}
+    <style media="screen">
+      html,
+      body {
+        margin: 0;
+        width: 100%;
+        height: auto;
+        overflow: hidden;
+        background: black;
+        color: ivory;
+        font-family: Mulish, sans-serif;
+        font-weight: 800;
+        box-sizing: border-box;
+      }
+      #lower3 {
+        position: relative;
+        height: 14vw;
+        box-sizing: border-box;
+        padding: 0px 22vw 0px 1vw; /* FOR LOGO ON RIGHT (SECOND ONE WINS)*/
+        padding: 0px 1vw 0px 15vw; /* FOR LOGO ON LEFT  (SECOND ONE WINS) (default) */
+        overflow: hidden;
+        box-sizing: border-box;
+        font-weight: 800;
+        font-size: 60pt;
+        letter-spacing: -1px;
+        text-shadow: 2px 2px 9px rgba(0, 0, 0, 1); /* BLACK SHADOW (SECOND ONE WINS) */
+        text-shadow: 1px 0px 9px rgba(255, 255, 255, 0.25),
+          0px 1px 9px rgba(255, 255, 255, 0.25),
+          -1px 0px 9px rgba(255, 255, 255, 0.25),
+          0px -1px 9px rgba(255, 255, 255, 0.25); /* WHITE GLOW (SECOND ONE WINS) */
+        -webkit-text-stroke: 0px black;
+        color: black;
+      }
+      #lower3 img {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 14vw; /* LOWER THIRD ASPECT RATIO IS 100/14 (7.14) */
+        object-fit: cover;
+      }
+      #lower3 #textwrapper {
+        transition: opacity 0.7s;
+        opacity: 0;
+        position: relative;
+        top: 50%;
+        transform: translateY(-50%);
+        line-height: 1;
+        white-space: pre-line;
+      }
+      #lower3 #textwrapper.showtext {
+        opacity: 1;
+      }
+      #lower3 #caption {
+        transition: all 0s;
+        transform: translateX(100%);
+        font-weight: 700;
+        font-style: italic;
+        position: absolute;
+        bottom: 0px;
+        right: 0px;
+        box-sizing: border-box;
+        padding: 3px 10px 3px 18px;
+        background-color: black;
+        border-radius: 13px 0 0 0;
+        font-size: 14px;
+        line-height: 1em;
+        color: #bed2eb;
+        text-shadow: none;
+        /*				-webkit-text-stroke: 1px #98c6fe;*/
+        text-transform: uppercase;
+      }
+      #lower3.hascaption #caption {
+        transform: translateX(0%);
+        transition: all 1s;
+      }
+      span.blank {
+        color: #ffc552;
+        -webkit-text-stroke: 1px #ffc552;
+        text-shadow: 2px 2px 9px rgba(0, 0, 0, 1);
+        text-transform: uppercase;
+        text-decoration: underline;
+        font-weight: 900;
+        letter-spacing: -2px;
+      }
+      .fade-enter-active,
+      .fade-leave-active {
+        transition: opacity 0.5s;
+      }
+      .fade-enter, .fade-leave-to /* .fade-leave-active below version 2.1.8 */ {
+        opacity: 0;
+      }
+    </style>
+    <meta charset="UTF-8" />
+  </head>
 
-
-		</style>
-		<meta charset="UTF-8" />
-	</head>
-
-	<body>
-		<div id="app" :class="">
-			<div id="lower3" :class="{hascaption:caption && show_text}">
-				<img :src="image" alt="" />
-				<div id="caption" :class="{showcaption:show_text && caption}" v-html="caption"></div>
-				<div id="textwrapper" :class="{showtext:show_text}">
-					<!-- this transition doesn't work yet because the text size gets recomputed on update -->
-					<!-- using the key forces this element to use enter/leave transitions when key changes -->
-					<!-- 
+  <body>
+    <div id="app" :class="">
+      <div id="lower3" :class="{hascaption:caption && show_text}">
+        <img :src="image" alt="" />
+        <div
+          id="caption"
+          :class="{showcaption:show_text && caption}"
+          v-html="caption"
+        ></div>
+        <div id="textwrapper" :class="{showtext:show_text}">
+          <!-- this transition doesn't work yet because the text size gets recomputed on update -->
+          <!-- using the key forces this element to use enter/leave transitions when key changes -->
+          <!-- 
 						<transition name="-fade-" zmode="out-in">
 							<div id="text" :key="html" v-html="html"></div>
 						</transition>
 					 -->
-					<div id="text" v-html="html"></div>
-				</div>
-			</div>
-		</div>
+          <div id="text" v-html="html"></div>
+        </div>
+      </div>
+    </div>
 
-		<script type="text/javascript" src="lib/vue.js"></script>
-		<!-- <script src="https://cdn.jsdelivr.net/npm/vue"></script> -->
+    <script type="text/javascript" src="lib/vue.js"></script>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/vue"></script> -->
 
-		<!-- main code goes here -->
-		<script type="text/javascript">
-			let ws;
-			let reconnectTime = 3000;
-			let reconnectTimer = 0;
-			let app = new Vue({
-				el: "#app",
-				data: {
-					text: "",
-					html: "",
-					caption: "",
-					image: "lower3.jpg",
-					show_text: true,
-				},
-				computed: {},
-				methods: {
-					getLower() {
-						ws.bettersend("lower3");
-					},
-					updateFrom(data) {
-						if ( data.html != '' )
-							this.html = data.html;
-						if ( data.text != '' )
-							this.text = data.text;
-						if ( data.caption != '' )
-							this.caption = data.caption;
-						if ( data.image != '' )
-							this.image = data.image;
-						this.show_text = ( data.html != '' || data.text != '' );
-					},
-					connect() {
-						this.connecting = true;
-						console.log("attempting to reconnect to watcher service");
+    <!-- main code goes here -->
+    <script type="text/javascript">
+      let ws;
+      let reconnectTime = 3000;
+      let reconnectTimer = 0;
+      let app = new Vue({
+        el: '#app',
+        data: {
+          text: '',
+          html: '',
+          caption: '',
+          image: 'lower3.jpg',
+          show_text: true,
+        },
+        computed: {},
+        methods: {
+          getLower() {
+            ws.bettersend('lower3');
+          },
+          updateFrom(data) {
+            if (data.html != '') this.html = data.html;
+            if (data.text != '') this.text = data.text;
+            if (data.caption != '') this.caption = data.caption;
+            if (data.image != '') this.image = data.image;
+            this.show_text = data.html != '' || data.text != '';
+          },
+          connect() {
+            this.connecting = true;
+            console.log('attempting to reconnect to watcher service');
 
-						// connect the websocket
-						ws = new WebSocket(`ws://${document.location.host}`);
-						ws.bettersend = function(message = "", data = {}) {
-							ws.send(JSON.stringify({ message, data }));
-						};
+            // connect the websocket
+            ws = new WebSocket(`ws://${document.location.host}`);
+            ws.bettersend = function (message = '', data = {}) {
+              ws.send(JSON.stringify({ message, data }));
+            };
 
-						ws.onmessage = event => {
-							let { message, data } = JSON.parse(event.data);
-							console.log(`"${message}" message received`);
-							switch (message) {
-								case "lower3":
-									this.updateFrom(data);
-									break;
-								case "status":
-									this.updateFrom(data.lower3);
-									break;
-							}
-							console.log(message);
-							console.log(data);
-						};
-						ws.onclose = event => {
-							this.connected = false;
-							console.log(
-								`disconnected from watcher service... reconnecting in ${reconnectTime /
-									1000} seconds`
-							);
-							reconnectTimer = setTimeout(() => {
-								this.connect();
-							}, reconnectTime);
-						};
-						ws.onopen = event => {
-							this.connected = true;
-							this.connecting = false;
-							console.log("Connected to watcher service");
-							this.getLower();
-						};
-					},
-					scaleText() {
-						// scale text to fit
-						let el = document.getElementById("textwrapper");
-						el.style.fontSize = "70px";
+            ws.onmessage = (event) => {
+              let { message, data } = JSON.parse(event.data);
+              console.log(`"${message}" message received`);
+              switch (message) {
+                case 'lower3':
+                  this.updateFrom(data);
+                  break;
+                case 'status':
+                  this.updateFrom(data.lower3);
+                  break;
+              }
+              console.log(message);
+              console.log(data);
+            };
+            ws.onclose = (event) => {
+              this.connected = false;
+              console.log(
+                `disconnected from watcher service... reconnecting in ${
+                  reconnectTime / 1000
+                } seconds`,
+              );
+              reconnectTimer = setTimeout(() => {
+                this.connect();
+              }, reconnectTime);
+            };
+            ws.onopen = (event) => {
+              this.connected = true;
+              this.connecting = false;
+              console.log('Connected to watcher service');
+              this.getLower();
+            };
+          },
+          scaleText() {
+            // scale text to fit
+            let el = document.getElementById('textwrapper');
+            el.style.fontSize = '70px';
 
-						let l3 = document.getElementById("lower3");
-						let padding = 10;
-						let targetHeight = l3.offsetHeight - padding * 2;
-						var i = 70;
-						while (el.offsetHeight > targetHeight) {
-							i--;
-							// console.log(i);
-							el.style.fontSize = `${i}px`;
-						}
-					}
-				},
-				updated: function() {
-					this.scaleText();
-				},
-				mounted: function() {
-					window.addEventListener('resize', ()=>{
-						this.scaleText();
-						console.log('resized');
-					});
-					this.connect();
-				}
-			});
-		</script>
-	</body>
+            let l3 = document.getElementById('lower3');
+            let padding = 10;
+            let targetHeight = l3.offsetHeight - padding * 2;
+            var i = 70;
+            while (el.offsetHeight > targetHeight) {
+              i--;
+              // console.log(i);
+              el.style.fontSize = `${i}px`;
+            }
+          },
+        },
+        updated: function () {
+          this.scaleText();
+        },
+        mounted: function () {
+          window.addEventListener('resize', () => {
+            this.scaleText();
+            console.log('resized');
+          });
+          this.connect();
+        },
+      });
+    </script>
+  </body>
 </html>
