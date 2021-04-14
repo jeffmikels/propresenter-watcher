@@ -15,8 +15,6 @@ const CONF_FILE = path.join( HOME, '.config', 'pro-presenter-control.json' );
 // app-level configuration file 
 const config = require( './config.js' );
 loadLocalConfigFile();
-console.log( 'INFO: Configuration loaded' );
-console.log( config );
 
 const { markdown } = require( './helpers.js' );
 const { ModuleTrigger, ModuleTriggerArg, GlobalModule } = require( './modules/module.js' );
@@ -345,7 +343,7 @@ function saveConfig() {
 	let dirname = path.dirname( CONF_FILE );
 	let current = {};
 	for ( let cm of configuredControllers ) {
-		Log( cm.getInfo() );
+		// Log( cm.getInfo() );
 		if ( cm == globalController ) continue;
 
 		// convert to array if another one by this key already exists
@@ -502,9 +500,10 @@ function setupProListeners() {
 
 	// pass all events directly through to the frontend
 	pro.on( 'sddata', ( data ) => broadcast( 'sddata', data ) );
+	pro.on( 'sdupdate', ( data ) => broadcast( 'sdupdate', data ) );
 	pro.on( 'msgupdate', ( data ) => broadcast( 'msgupdate', data ) );
-	pro.on( 'remoteupdate', ( data ) => broadcast( 'remoteupdate', data ) );
 	pro.on( 'remotedata', ( data ) => broadcast( 'remotedata', data ) );
+	pro.on( 'remoteupdate', ( data ) => broadcast( 'remoteupdate', data ) );
 }
 
 function getStatus() {

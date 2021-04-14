@@ -372,10 +372,10 @@
         <clock v-if="pro_status.system_time">{{ pro_status.system_time.text }}</clock>
 
         <!-- PRO CONNECTION STATUS -->
-        <status v-if="connected">
+        <status>
           PP:
-          <span :class="{active: pro_status.active, inactive: !pro_status.active}">
-            {{ pro_status.active ? "ACTIVE" : "INACTIVE" }}
+          <span :class="{active: pro_status.connected, inactive: !pro_status.connected}">
+            {{ pro_status.connected ? "ACTIVE" : "INACTIVE" }}
           </span>
         </status>
       </div>
@@ -734,7 +734,11 @@
                     this.loading = false;
                   }
                   break;
+                case 'remoteupdate':
+                case 'sdupdate':
                 case 'pro_status':
+                  this.pro_status = data;
+                  break;
                   this.pro_status = data;
                   break;
                 case 'sddata':

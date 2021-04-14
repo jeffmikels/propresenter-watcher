@@ -26,6 +26,10 @@ class ProController extends Module {
     return this.sd.slides;
   }
 
+  get connected() {
+    return this.sd.connected && this.remote.connected;
+  }
+
   constructor ( config, reset = false ) {
     super( config );
 
@@ -76,14 +80,14 @@ class ProController extends Module {
       'remotedata',
     ];
 
-    this.sd.on( 'update', () => this.emit( 'sdupdate' ) );
+    this.sd.on( 'update', () => this.emit( 'sdupdate', this.fullStatus() ) );
     this.sd.on( 'data', ( data ) => this.emit( 'sddata', data ) );
     this.sd.on( 'msgupdate', ( data ) => this.emit( 'msgupdate', data ) );
     this.sd.on( 'sysupdate', ( data ) => this.emit( 'sysupdate', data ) );
     this.sd.on( 'slideupdate', ( data ) => this.emit( 'slideupdate', data ) );
     this.sd.on( 'timersupdate', ( data ) => this.emit( 'timersupdate', data ) );
 
-    this.remote.on( 'update', () => this.emit( 'remoteupdate' ) );
+    this.remote.on( 'update', () => this.emit( 'remoteupdate', this.fullStatus() ) );
     this.remote.on( 'data', ( data ) => {
       this.emit( 'remotedata', data );
       if ( this.master ) {
@@ -108,6 +112,7 @@ class ProController extends Module {
     let r = {
       master: this.master,
       connected: this.connected,
+      controlling: this.remote.controlling,
       ...this.sd.status(),
     };
     // r.master = this.master;
@@ -216,6 +221,15 @@ class ProSDClient extends EventEmitter {
     };
   }
 
+
+  close() {
+    this.ws?.terminate();
+    this.connected = false;
+    this.active = false;
+    this.notify();
+  }
+
+
   reconnect( delay = 0 ) {
     this.parent.log( `Attempting reconnect in ${delay} seconds.` );
     clearTimeout( this.reconnectTimeout );
@@ -230,8 +244,17 @@ class ProSDClient extends EventEmitter {
 
     clearTimeout( this.reconnectTimeout );
 
-    if ( this.ws ) this.ws.terminate();
-    this.ws = new WebSocket( `ws://${this.host}:${this.port}/stagedisplay` );
+    let url = `ws://${this.host}:${this.port}/stagedisplay`;
+    console.log( `ProSDClient: connecting to ${url}` );
+    if ( this.ws ) this.close();
+    try {
+      this.ws = new WebSocket( url );
+    } catch ( e ) {
+      this.close();
+      console.log( 'ERROR: Could not connect to ' + url );
+      console.log( e );
+      return;
+    }
 
     this.ws.on( 'error', ( err ) => {
       this.parent.log( 'ProPresenter WebSocket Error:' );
@@ -356,12 +379,44 @@ class ProRemoteClient extends EventEmitter {
     super();
     this.connected = false;
     this.controlling = false;
-
+    this.host = host;
+    this.port = port;
     this.password = password;
     this.version = version;
     this.parent = parent;
 
-    this.ws = new WebSocket( `ws://${host}:${port}/remote` );
+    this.callbacks = {};
+
+    // handle pro6 status
+    this.status = {
+      currentPresentation: null,
+      currentSlideIndex: 0,
+      library: [],
+      playlists: [],
+    };
+
+    this.connect();
+  }
+
+  close() {
+    this.ws?.terminate();
+    this.connected = false;
+    this.controlling = false;
+    this.notify();
+  }
+
+  connect() {
+    let url = `ws://${this.host}:${this.port}/remote`;
+    console.log( `ProRemote: connecting to ${url}` );
+    if ( this.ws ) this.close();
+    try {
+      this.ws = new WebSocket( url );
+    } catch ( e ) {
+      this.close();
+      console.log( 'ERROR: Could not connect to ' + url );
+      console.log( e );
+      return;
+    }
 
     this.ws.on( 'message', ( data ) => {
       this.handleData( JSON.parse( data ) );
@@ -376,16 +431,11 @@ class ProRemoteClient extends EventEmitter {
       this.controlling = false;
       this.notify();
     } );
-
-    this.callbacks = {};
-
-    // handle pro6 status
-    this.status = {
-      currentPresentation: null,
-      currentSlideIndex: 0,
-      library: [],
-      playlists: [],
-    };
+    this.ws.on( 'error', () => {
+      this.connected = false;
+      this.controlling = false;
+      this.notify();
+    } );
   }
 
   // notify is used for any status updates
