@@ -473,7 +473,10 @@
               <ul>
                 <li v-for="value, key in controller.config" v-if="key != 'triggers'">
                   <label class="text">{{key}}</label>
-                  <input @change="update_config" v-model="value" />
+                  <input
+                    @change="update_controller_config(controller)"
+                    v-model="controller.config[key]"
+                  />
                 </li>
               </ul>
             </div>
@@ -652,12 +655,18 @@
             ws.bettersend('update_midi', this.selected_port);
           },
           update_config() {
-            ws.bettersend('config', this.config);
+            console.log(this.config);
+            ws.bettersend('update_config', this.config);
           },
           update_allow_triggers() {
             ws.bettersend('toggle_allow_triggers', this.allow_triggers);
           },
+          update_controller_config(controller) {
+            console.log(controller);
+            ws.bettersend('update_controller_config', controller);
+          },
           update_controller(controller) {
+            console.log(controller);
             ws.bettersend('update_controller', controller);
           },
           update_trigger(trigger) {
@@ -697,12 +706,17 @@
             // connect the websocket
             ws = new WebSocket(`ws://${document.location.host}`);
             ws.bettersend = function (message = '', data = {}) {
-              ws.send(JSON.stringify({ message, data }));
+              console.log('SENDING: ' + message);
+              let tosend = JSON.stringify({ message, data });
+              ws.send(tosend);
+              console.log(tosend);
             };
 
             ws.onmessage = (event) => {
               let { message, data } = JSON.parse(event.data);
               this.log(`"${message}" message received`);
+              console.log(data);
+
               switch (message) {
                 // this one cascades to the next one
                 case 'full_status':
@@ -711,6 +725,7 @@
                   this.triggers = data.triggers;
                 case 'status':
                   this.config = data.config;
+                  // Vue.set(this, 'config', data.config);
                   this.allow_triggers = data.allow_triggers;
                   if (this.first_load) {
                     this.state = data.pro_status.connected ? 'home' : 'configuration';
@@ -750,8 +765,6 @@
                   this.vmix_status = data;
                   break;
               }
-              console.log(message);
-              console.log(data);
             };
             ws.onclose = (event) => {
               this.connected = false;

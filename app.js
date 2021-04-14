@@ -4,12 +4,32 @@
 // see the documentation below
 'use strict';
 
-// ----- SETUP HAPPENS HERE ----------------
+const os = require( 'os' );
+const path = require( 'path' );
+const fs = require( 'fs' );
 
-// general configuration
+// ----- SETUP HAPPENS HERE ----------------
+const HOME = os.homedir();
+const CONF_FILE = path.join( HOME, '.config', 'pro-presenter-control.json' );
+
+// app-level configuration file 
 const config = require( './config.js' );
+loadLocalConfigFile();
+console.log( 'INFO: Configuration loaded' );
+console.log( config );
+
 const { markdown } = require( './helpers.js' );
-const { Module, ModuleTrigger, ModuleTriggerArg, GlobalModule } = require( './modules/module.js' );
+const { ModuleTrigger, ModuleTriggerArg, GlobalModule } = require( './modules/module.js' );
+
+let Log = console.log;
+
+// Object Extension to add a "clear" function on objects
+Object.prototype.clear = function () {
+	if ( Array.isArray( this ) )
+		this.length = 0;
+	else
+		Object.keys( this ).forEach( k => delete this[ k ] );
+}
 
 // ----- MODULES AND TRIGGERS --------------
 
@@ -25,7 +45,6 @@ const { Module, ModuleTrigger, ModuleTriggerArg, GlobalModule } = require( './mo
 //
 // modules must maintain their own connection to whatever it is they control
 
-const globalController = new GlobalModule();
 
 // Everything begins with ProPresenter, so it should always be instantiated
 const { ProController } = require( './modules/pro.js' );
@@ -59,121 +78,18 @@ modulesByName[ HTTPController.name ] = HTTPController;
 // modulesByName[ WebSocketController.name ] = WebSocketController;
 // modulesByName[ TCPController.name ] = TCPController;
 
+const globalController = new GlobalModule();
+
 // this will keep a registration of all the enabled and configured controllers
 // each controller should expose its own commands and documentation
 const configuredControllers = [];
-
-// add a "Global" controller
-configuredControllers.push( globalController );
-
-// now, read the configuration file and create all expected controllers
-// controller keys in the config file must match the static Module name of the controller
-for ( let k of Object.keys( config.controllers ) ) {
-	if ( !k in modulesByName ) continue;
-	let controllerModule = modulesByName[ k ];
-	let coptions = config.controllers[ k ];
-	let cm;
-	if ( Array.isArray( coptions ) ) {
-		for ( let instanceOptions of coptions ) {
-			cm = new controllerModule( instanceOptions );
-			cm.on( 'log', ( s ) => Log( s ) );
-			configuredControllers.push( cm );
-		}
-	} else {
-		cm = new controllerModule( coptions );
-		cm.on( 'log', ( s ) => Log( s ) );
-		configuredControllers.push( cm );
-	}
-}
-
 const configuredControllersByUuid = {};
-configuredControllers.forEach( ( e ) => ( configuredControllersByUuid[ e.uuid ] = e ) );
-
-// we now have a configured module for each of the controllers specified in the
-// configuration file. Each of them should have created their own instances by now
-// and each of them should manage their own lifecycle
-
-// ----- THE LOGGER SETTINGS WORK DIFFERENTLY ------
-let Log = console.log;
-if ( config.USEWEBLOG ) {
-	const WebLogger = require( './modules/web-logger.js' );
-	const weblog = new WebLogger( config.LOGGER_URL, config.LOGGER_KEY );
-	Log = function ( s, allowWebLog = true ) {
-		if ( allowWebLog ) weblog.log( s );
-		console.log( s );
-	};
-}
-
-// special triggers on the "Global" module
-// triggers for for custom logging
-globalController.triggers.push(
-	new ModuleTrigger(
-		'log',
-		'sends a log event to the logger of the format: "LOGSTRING: timestamp"',
-		[ new ModuleTriggerArg( 'string', 'string', 'string to log', true ) ],
-		( _, s = '' ) => {
-			if ( s != null && s != '' ) s += ': ';
-			Log( s + timestamp() );
-		}
-	)
-);
-
-// special triggers for lower3 computations
-globalController.triggers.push(
-	new ModuleTrigger(
-		'l3',
-		'sets the lower third text',
-		[
-			new ModuleTriggerArg(
-				'markdown_text',
-				'string',
-				'a string to be processed as markdown',
-				false
-			),
-		],
-		( _, markdown_text ) => {
-			Log( markdown_text );
-			lower3.text = markdown_text;
-			lower3.html = markdown( markdown_text );
-		}
-	)
-);
-
-globalController.triggers.push(
-	new ModuleTrigger(
-		'l3caption',
-		'sets the lower third caption text',
-		[
-			new ModuleTriggerArg(
-				'caption',
-				'string',
-				'stores data to a lower third caption field',
-				true
-			),
-		],
-		( _, caption ) => {
-			lower3.caption = caption;
-		}
-	)
-);
 
 // create data structures to make it easier to access
 // the triggers exposed by each controller
 const configuredTriggers = [];
-for ( let cm of configuredControllers ) {
-	for ( let trigger of cm.triggers ) {
-		configuredTriggers.push( trigger );
-	}
-}
 const configuredTriggersByUuid = {};
-configuredTriggers.forEach( ( e ) => ( configuredTriggersByUuid[ e.uuid ] = e ) );
 
-// --------------------------------
-// - ALL MODULES ARE NOW CONFIGURED
-// - MAIN STATE VARIABLES COME NEXT
-// --------------------------------
-
-let pro = ProController.master; // returns null or the master instance if there is one
 let allow_triggers = true;
 
 let lower3 = {
@@ -183,6 +99,14 @@ let lower3 = {
 	image: config.LOWER3_IMAGE,
 };
 
+let pro; // this will become the top level master propresenter module when we initialize it
+
+setGlobalTriggers();
+registerAllConfigured();
+
+// --------------------------------
+// - ALL MODULES ARE NOW CONFIGURED
+// --------------------------------
 // TODO: CONVERT PRO NOTES TO USE NEW TRIGGERS
 // [sermon_start] => log[SERMON STARTING]
 // [sermon_end]   => log[SERMON ENDED]
@@ -190,67 +114,7 @@ let lower3 = {
 // need to create pluggable triggers for other propresenter states
 // need to create plugin system for additional modules
 
-// ----- PRO PRESENTER LISTENERS -----
-pro.on( 'sysupdate', ( e ) => {
-	Log( e );
-	if ( allow_triggers ) fireTriggers( '~sysupdate~', [], pro );
-	broadcast( 'sysupdate', e );
-} );
-
-pro.on( 'timersupdate', ( e ) => {
-	Log( e );
-	if ( e.uid == '47E8B48C-0D61-4EFC-9517-BF9FB894C8E2' ) {
-		Log( `COUNTDOWN TIMER TRIGGERED:` );
-		Log( e );
-	}
-	if ( allow_triggers ) fireTriggers( '~timersupdate~', [], pro );
-	broadcast( 'timersupdate', e );
-} );
-
-pro.on( 'slideupdate', ( data ) => {
-	Log( data );
-	console.log( '--------- PRO SLIDE UPDATE -------------' );
-	console.log( data );
-	broadcast( 'slideupdate', data );
-
-	// always update the lower3
-	// later triggers might override this
-	lower3.text = pro.slides.current.text;
-	lower3.html = markdown( pro.slides.current.text );
-	lower3.caption = '';
-
-	let foundTags = parseNotes( pro.slides.current.notes );
-	Log( foundTags );
-
-	// for each found tag, fire the matching triggers
-	let used = false;
-	if ( allow_triggers ) {
-		for ( let { tag, args } of foundTags ) {
-			used = fireTriggers( tag, args, pro ) || used;
-		}
-		used = fireTriggers( '~slideupdate~', [], pro ) || used;
-
-		if ( !used ) {
-			console.log( 'No triggers configured for this data:' );
-			console.log( data );
-		}
-	} else {
-		console.log( 'ProPresenter Update, but triggers are disabled.' );
-	}
-	console.log( '-----------------------------------' );
-
-	broadcast( 'status', getStatus() ); // contains lower3 data
-	broadcast( 'pro_status', getProStatus() ); // contains proPresenter data
-} );
-
-// pass all events directly through to the frontend
-pro.on( 'sddata', ( data ) => broadcast( 'sddata', data ) );
-pro.on( 'msgupdate', ( data ) => broadcast( 'msgupdate', data ) );
-pro.on( 'remoteupdate', ( data ) => broadcast( 'remoteupdate', data ) );
-pro.on( 'remotedata', ( data ) => broadcast( 'remotedata', data ) );
-
 //  ---- UI SERVER CODE ---
-const fs = require( 'fs' );
 const http = require( 'http' );
 const url = require( 'url' );
 const WebSocket = require( 'ws' );
@@ -276,8 +140,8 @@ wss.on( 'connection', function connection( ws ) {
 
 	ws.bettersend = function ( message = '', data = {} ) {
 		let tosend = JSON.stringify( { message, data } );
-		console.log( 'sending:' );
-		console.log( tosend );
+		// console.log( 'sending:' );
+		// console.log( tosend );
 		ws.send( tosend );
 	};
 
@@ -291,7 +155,6 @@ wss.on( 'connection', function connection( ws ) {
 		console.log( raw_message );
 
 		let { message, data } = JSON.parse( raw_message );
-
 		switch ( message ) {
 			case 'echo':
 				broadcast( 'echo', data );
@@ -309,29 +172,41 @@ wss.on( 'connection', function connection( ws ) {
 				let status = getStatus();
 				ws.bettersend( 'lower3', status.lower3 );
 				break;
-			case 'config':
+			case 'update_config':
 				console.log( 'updating config' );
 				for ( let key of Object.keys( config ) ) {
 					if ( config[ key ] != data[ key ] ) config[ key ] = data[ key ];
 				}
-				if ( pro ) {
-					pro.host = config.controllers.pro.host;
-					pro.port = config.controllers.pro.port;
-					pro.password = config.controllers.pro.password;
-					if ( pro.connected ) pro.ws.close();
-					pro.connect();
-				}
+				Log( config );
+				saveConfig();
+				registerAllConfigured();
 				broadcast( 'status', getStatus() );
+				break;
+			case 'update_controller_config':
+				Log( 'updating controller config' );
+				Log( data );
+				if ( data.uuid && data.uuid in configuredControllersByUuid ) {
+					let controller = configuredControllersByUuid[ data.uuid ];
+					Log( 'BEFORE' );
+					Log( controller.getInfo() );
+					controller.updateConfig( data.config ); // TODO: flesh this out for each component
+					Log( 'AFTER' );
+					Log( controller.getInfo() );
+				} else {
+					// the frontend has created a new controller!
+					Log( 'creating a new controller' );
+				}
+				saveConfig(); // should read the config from each component and not from the global config object
+				// processConfig();
+				// broadcast( 'status', getStatus() );
 				break;
 			case 'update_controller':
 				console.log( 'updating controller status' );
 				Log( data );
-				let c = data;
-				let uuid = c.uuid;
-				if ( uuid in configuredControllersByUuid ) {
-					let controller = configuredControllersByUuid[ uuid ];
-					controller.enabled = c.enabled;
-					for ( let t of c.triggers ) {
+				if ( data.uuid in configuredControllersByUuid ) {
+					let controller = configuredControllersByUuid[ data.uuid ];
+					controller.enabled = data.enabled;
+					for ( let t of data.triggers ) {
 						if ( t.uuid in configuredTriggersByUuid ) {
 							configuredTriggersByUuid[ t.uuid ].enabled = t.enabled;
 						}
@@ -342,9 +217,8 @@ wss.on( 'connection', function connection( ws ) {
 			case 'update_trigger':
 				console.log( 'updating trigger status' );
 				Log( data );
-				let t = data;
-				if ( t.uuid in configuredTriggersByUuid ) {
-					configuredTriggersByUuid[ t.uuid ].enabled = t.enabled;
+				if ( data.uuid in configuredTriggersByUuid ) {
+					configuredTriggersByUuid[ data.uuid ].enabled = data.enabled;
 				}
 				broadcast( 'status', getStatus() );
 				break;
@@ -390,8 +264,249 @@ console.log( `
 `);
 server.listen( config.UI_SERVER_PORT );
 
-// OTHER FUNCTIONS
-function noop() { }
+
+// PRIMARY FUNCTIONS
+function broadcast( message, data ) {
+	wss.clients.forEach( function each( ws ) {
+		ws.send( JSON.stringify( { message, data } ) );
+	} );
+}
+
+function setGlobalTriggers() {
+	// special triggers on the "Global" module
+	// triggers for for custom logging
+	globalController.registerTrigger(
+		new ModuleTrigger(
+			'log',
+			'sends a log event to the logger of the format: "LOGSTRING: timestamp"',
+			[ new ModuleTriggerArg( 'string', 'string', 'string to log', true ) ],
+			( _, s = '' ) => {
+				if ( s != null && s != '' ) s += ': ';
+				Log( s + timestamp() );
+			}
+		)
+	);
+
+	// special triggers for lower3 computations
+	globalController.registerTrigger(
+		new ModuleTrigger(
+			'l3',
+			'sets the lower third text',
+			[
+				new ModuleTriggerArg(
+					'markdown_text',
+					'string',
+					'a string to be processed as markdown',
+					false
+				),
+			],
+			( _, markdown_text ) => {
+				Log( markdown_text );
+				lower3.text = markdown_text;
+				lower3.html = markdown( markdown_text );
+			}
+		)
+	);
+	globalController.registerTrigger(
+		new ModuleTrigger(
+			'l3caption',
+			'sets the lower third caption text',
+			[
+				new ModuleTriggerArg(
+					'caption',
+					'string',
+					'stores data to a lower third caption field',
+					true
+				),
+			],
+			( _, caption ) => {
+				lower3.caption = caption;
+			}
+		)
+	);
+}
+
+function loadLocalConfigFile() {
+	// user-level configuration file
+	try {
+		let jdata = fs.readFileSync( CONF_FILE );
+		let localconf = JSON.parse( jdata );
+		for ( let key of Object.keys( localconf ) ) {
+			config[ key ] = localconf[ key ];
+		}
+	} catch ( e ) {
+		console.log( `WARNING: Could not read local settings from ${CONF_FILE}` );
+	}
+}
+
+// needs to process each component's config... not the global
+// config object we started with
+function saveConfig() {
+	let dirname = path.dirname( CONF_FILE );
+	let current = {};
+	for ( let cm of configuredControllers ) {
+		Log( cm.getInfo() );
+		if ( cm == globalController ) continue;
+
+		// convert to array if another one by this key already exists
+		if ( cm.moduleName in current ) {
+			current[ cm.moduleName ] = [ current[ cm.moduleName ] ];
+			current[ cm.moduleName ].push( cm.config );
+		} else {
+			current[ cm.moduleName ] = cm.config;
+		}
+	}
+	config.controllers = current;
+
+	fs.mkdir( dirname, { recursive: true }, ( err ) => {
+		if ( err && err.code != 'EEXIST' ) {
+			Log( `ERROR: Could not save settings to ${CONF_FILE}` );
+			Log( err );
+		} else {
+			fs.writeFile( CONF_FILE, JSON.stringify( config, null, 2 ), 'utf8', ( err ) => {
+				if ( err ) Log( err );
+				else Log( `SUCCESS: Settings saved to ${CONF_FILE}` );
+			} );
+		}
+	} );
+}
+
+function registerAllConfigured() {
+	Log( 'Registering all configured controllers' );
+
+	// since this might be the second time we have processed the configuration
+	// we need to delete previously existing instances of controller modules
+	// that means at the end of this, we will need to re-establish all event listeners
+	for ( let mod of Object.values( modulesByName ) ) {
+		if ( mod.instances ) {
+			mod.instances.forEach( e => e.dispose() );
+			mod.instances.length = 0;
+		}
+	}
+
+	// reset the Controller and Trigger registrations
+	configuredControllers.clear();
+	configuredControllersByUuid.clear();
+	configuredTriggers.clear();
+	configuredTriggersByUuid.clear();
+
+	// restore the global controller first
+	registerControllerWithTriggers( globalController );
+
+
+	// ----- SETUP THE WEBLOGGER ------
+	if ( config.USEWEBLOG ) {
+		const WebLogger = require( './modules/web-logger.js' );
+		let weblog = new WebLogger( config.LOGGER_URL, config.LOGGER_KEY );
+		Log = function ( s, allowWebLog = true ) {
+			if ( allowWebLog ) weblog.log( s );
+			console.log( s );
+		};
+	}
+
+	// now, process the configuration and create all expected controllers
+	// controller keys in the config file must match the static Module name of the controller
+	for ( let k of Object.keys( config.controllers ) ) {
+		if ( !k in modulesByName ) continue;
+		let controllerModule = modulesByName[ k ];
+		let coptions = config.controllers[ k ];
+		let cm;
+		if ( Array.isArray( coptions ) ) {
+			for ( let instanceOptions of coptions ) {
+				cm = new controllerModule( instanceOptions );
+				cm.on( 'log', ( s ) => Log( s ) );
+				registerControllerWithTriggers( cm );
+			}
+		} else {
+			cm = new controllerModule( coptions );
+			cm.on( 'log', ( s ) => Log( s ) );
+			registerControllerWithTriggers( cm );
+		}
+	}
+	// we now have a configured module for each of the controllers specified in the
+	// configuration file. Each of them should have created their own instances by now
+	// and each of them should manage their own lifecycle
+
+	// // finally, reconnect ProPresenter Listeners
+	pro = ProController.master;
+	setupProListeners();
+}
+
+// takes a configured controller module and adds it to the
+// configured controllers and triggers structures
+function registerControllerWithTriggers( cm ) {
+	configuredControllers.push( cm );
+	configuredControllersByUuid[ cm.uuid ] = cm;
+	for ( let trigger of cm.triggers ) {
+		configuredTriggers.push( trigger );
+		configuredTriggersByUuid[ trigger.uuid ] = trigger;
+	}
+}
+
+
+// ----- PRO PRESENTER LISTENERS -----
+function setupProListeners() {
+	pro.removeAllListeners();
+
+	pro.on( 'sysupdate', ( e ) => {
+		Log( e );
+		if ( allow_triggers ) fireTriggers( '~sysupdate~', [], pro );
+		broadcast( 'sysupdate', e );
+	} );
+
+	pro.on( 'timersupdate', ( e ) => {
+		Log( e );
+		if ( e.uid == '47E8B48C-0D61-4EFC-9517-BF9FB894C8E2' ) {
+			Log( `COUNTDOWN TIMER TRIGGERED:` );
+			Log( e );
+		}
+		if ( allow_triggers ) fireTriggers( '~timersupdate~', [], pro );
+		broadcast( 'timersupdate', e );
+	} );
+
+	pro.on( 'slideupdate', ( data ) => {
+		Log( data );
+		console.log( '--------- PRO SLIDE UPDATE -------------' );
+		console.log( data );
+		broadcast( 'slideupdate', data );
+
+		// always update the lower3
+		// later triggers might override this
+		lower3.text = pro.slides.current.text;
+		lower3.html = markdown( pro.slides.current.text );
+		lower3.caption = '';
+
+		let foundTags = parseNotes( pro.slides.current.notes );
+		Log( foundTags );
+
+		// for each found tag, fire the matching triggers
+		let used = false;
+		if ( allow_triggers ) {
+			for ( let { tag, args } of foundTags ) {
+				used = fireTriggers( tag, args, pro ) || used;
+			}
+			used = fireTriggers( '~slideupdate~', [], pro ) || used;
+
+			if ( !used ) {
+				console.log( 'No triggers configured for this data:' );
+				console.log( data );
+			}
+		} else {
+			console.log( 'ProPresenter Update, but triggers are disabled.' );
+		}
+		console.log( '-----------------------------------' );
+
+		broadcast( 'status', getStatus() ); // contains lower3 data
+		broadcast( 'pro_status', getProStatus() ); // contains proPresenter data
+	} );
+
+	// pass all events directly through to the frontend
+	pro.on( 'sddata', ( data ) => broadcast( 'sddata', data ) );
+	pro.on( 'msgupdate', ( data ) => broadcast( 'msgupdate', data ) );
+	pro.on( 'remoteupdate', ( data ) => broadcast( 'remoteupdate', data ) );
+	pro.on( 'remotedata', ( data ) => broadcast( 'remotedata', data ) );
+}
+
 function getStatus() {
 	if ( lower3.text == '' && pro.slides.current.text != '' ) {
 		lower3.text = pro.slides.current.text;
@@ -405,9 +520,11 @@ function getStatus() {
 		pro_connected: pro.connected,
 	}
 }
+
 function getProStatus() {
 	return pro.fullStatus();
 }
+
 function getFullStatus() {
 	return {
 		...getStatus(),
@@ -416,11 +533,7 @@ function getFullStatus() {
 		triggers: configuredTriggers.map( ( e ) => e.doc() ),
 	};
 }
-function broadcast( message, data ) {
-	wss.clients.forEach( function each( ws ) {
-		ws.send( JSON.stringify( { message, data } ) );
-	} );
-}
+
 function triggerStatus() {
 	let retval = { allow_triggers, triggers: [] };
 	for ( let i = 0; i < configuredTriggers.length; i++ ) {
@@ -562,6 +675,14 @@ function httpHandler( req, res ) {
 		match = req.url.match( /\/api\/status\/?$/ );
 		if ( match ) {
 			output = JSON.stringify( getStatus() );
+		}
+		match = req.url.match( /\/api\/pro_status\/?$/ );
+		if ( match ) {
+			output = JSON.stringify( getProStatus() );
+		}
+		match = req.url.match( /\/api\/full_status\/?$/ );
+		if ( match ) {
+			output = JSON.stringify( getFullStatus() );
 		}
 
 		// get all triggers

@@ -17,7 +17,6 @@ const { v4: uuidv4 } = require( 'uuid' );
 ///   update, sdupdate, remoteupdate, sddata, remotedata, msgupdate, slideupdate, sysupdate, timersupdate
 class Module extends EventEmitter {
   static supportsMultiple = false;
-  static instances = [];
 
   static name = 'module';
   static niceName = 'Module';
@@ -41,6 +40,7 @@ class Module extends EventEmitter {
   triggers = []; // a list of ModuleTriggers
   triggersByTag = {};
   enabled = true;
+  disposed = false;
 
   constructor ( config = {} ) {
     super();
@@ -64,6 +64,24 @@ class Module extends EventEmitter {
         );
       }
     }
+  }
+
+  // each module needs to be able to handle when an
+  // object's configuration changes including
+  // restarting services and child listeners
+  updateConfig( config ) {
+    this.config = config;
+    this.emit( 'new_config' );
+  }
+
+  // will dispose myself, don't use me after this !!
+  disposeAllInstances() {
+    if ( this.constructor.instances ) this.constructor.instances.forEach( e => e.dispose() );
+  }
+
+  dispose() {
+    this.removeAllListeners();
+    this.disposed = true;
   }
 
   log( s ) {

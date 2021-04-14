@@ -1,5 +1,5 @@
-const got = require('got');
-const { Module, ModuleTrigger, ModuleTriggerArg } = require('./module');
+const got = require( 'got' );
+const { Module, ModuleTrigger, ModuleTriggerArg } = require( './module' );
 
 /* OLD VMIX TRIGGERS
 // VMIX:
@@ -57,19 +57,16 @@ const vmix_advanced = /\[vmix\](.*?)\[\/vmix\]/gis;
 class VmixController extends Module {
   static name = 'vmix';
   static niceName = 'vMix Controller';
-  static create(config) {
-    return new VmixController(config);
+  static create( config ) {
+    return new VmixController( config );
   }
 
-  constructor(config) {
-    super(config);
-    let { host, port, default_title_input } = config;
+  constructor ( config ) {
+    super( config );
+    this.updateConfig( config );
 
-    this.endpoint = `${host}:${port}/api/?`;
     this.lastmessage = '';
     this.enabled = true;
-
-    this.default_title_input = default_title_input;
 
     this.onupdate = this.notify;
 
@@ -79,9 +76,9 @@ class VmixController extends Module {
         '~slideupdate~',
         'vMix Lyrics Handler (slide text => input text). This trigger runs on every slide update unless it sees "novmix" in the slide notes.',
         [],
-        (pro) => {
-          if (pro.slides.current.notes.match(/novmix/)) return;
-          this.setInputText(this.default_title_input, pro.slides.current.text);
+        ( pro ) => {
+          if ( pro.slides.current.notes.match( /novmix/ ) ) return;
+          this.setInputText( this.default_title_input, pro.slides.current.text );
         }
       )
     );
@@ -116,8 +113,8 @@ class VmixController extends Module {
             true
           ),
         ],
-        (_, trans, input, duration) =>
-          this.transitionToInput(trans, input, duration)
+        ( _, trans, input, duration ) =>
+          this.transitionToInput( trans, input, duration )
       )
     );
 
@@ -135,7 +132,7 @@ class VmixController extends Module {
             true
           ),
         ],
-        (_, input) => this.cutToInput(input)
+        ( _, input ) => this.cutToInput( input )
       )
     );
 
@@ -159,7 +156,7 @@ class VmixController extends Module {
             true
           ),
         ],
-        (_, input, duration) => this.fadeToInput(input, duration)
+        ( _, input, duration ) => this.fadeToInput( input, duration )
       )
     );
 
@@ -191,7 +188,7 @@ class VmixController extends Module {
             true
           ),
         ],
-        (pro, input, selection = 0, override = null) =>
+        ( pro, input, selection = 0, override = null ) =>
           this.setInputText(
             input,
             override ?? pro.slides.current.text,
@@ -236,8 +233,8 @@ class VmixController extends Module {
             true
           ),
         ],
-        (_, overlaynum = 1, toggletype = 0, input = null, seconds = null) =>
-          this.setOverlay(overlaynum, toggletype, input, seconds)
+        ( _, overlaynum = 1, toggletype = 0, input = null, seconds = null ) =>
+          this.setOverlay( overlaynum, toggletype, input, seconds )
       )
     );
 
@@ -261,8 +258,8 @@ class VmixController extends Module {
             false
           ),
         ],
-        (_, start = true, stream_number = 1) =>
-          this.triggerStream(start, stream_number)
+        ( _, start = true, stream_number = 1 ) =>
+          this.triggerStream( start, stream_number )
       )
     );
 
@@ -286,104 +283,111 @@ class VmixController extends Module {
             false
           ),
         ],
-        (_, data = null) => (data == null ? null : this.api(data))
+        ( _, data = null ) => ( data == null ? null : this.api( data ) )
       )
     );
   }
 
-  notify(data) {
-    this.emit('update', data);
+  updateConfig( config ) {
+    super.updateConfig( config );
+    let { host, port, default_title_input } = config;
+    this.endpoint = `${host}:${port}/api/?`;
+    this.default_title_input = default_title_input;
   }
 
-  send(cmd) {
+  notify( data ) {
+    this.emit( 'update', data );
+  }
+
+  send( cmd ) {
     let url = `${this.endpoint}${cmd}`;
-    console.log(`VMIX: ${url}`);
-    this.onupdate('sending command');
-    got(url)
+    console.log( `VMIX: ${url}` );
+    this.onupdate( 'sending command' );
+    got( url )
       .then(
-        (res) => {
-          console.log(`VMIX RESPONSE:\n${res.requestUrl}\n${res.body}`);
+        ( res ) => {
+          console.log( `VMIX RESPONSE:\n${res.requestUrl}\n${res.body}` );
           this.lastmessage = 'command successful';
-          this.onupdate(this.lastmessage);
+          this.onupdate( this.lastmessage );
         },
-        (err) => {
+        ( err ) => {
           // console.log(err);
           this.lastmessage = 'command failed';
-          this.onupdate(this.lastmessage);
+          this.onupdate( this.lastmessage );
         }
       )
-      .catch((err) => {
-        console.log('vmix request error');
+      .catch( ( err ) => {
+        console.log( 'vmix request error' );
         this.lastmessage = 'error sending command';
-        this.onupdate(this.lastmessage);
-      });
+        this.onupdate( this.lastmessage );
+      } );
   }
 
-  api(options) {
+  api( options ) {
     let cmds = [];
-    for (let [key, value] of Object.entries(options)) {
-      cmds.push(`${key}=${encodeURI(value)}`);
+    for ( let [ key, value ] of Object.entries( options ) ) {
+      cmds.push( `${key}=${encodeURI( value )}` );
     }
-    let cmd = cmds.join('&');
-    this.send(cmd);
+    let cmd = cmds.join( '&' );
+    this.send( cmd );
   }
 
   // when input is null, we toggle between program and preview
-  transitionToInput(transition = 'Cut', input = null, duration = 1000) {
+  transitionToInput( transition = 'Cut', input = null, duration = 1000 ) {
     let options = { Function: transition };
-    if (input != null) options.Input = input;
-    if (transition != 'Cut') options.Duration = duration;
-    this.api(options);
+    if ( input != null ) options.Input = input;
+    if ( transition != 'Cut' ) options.Duration = duration;
+    this.api( options );
   }
 
   // when input is null, we toggle between program and preview
-  fadeToInput(input = null, duration = 1000) {
-    this.transitionToInput('Fade', input, duration);
+  fadeToInput( input = null, duration = 1000 ) {
+    this.transitionToInput( 'Fade', input, duration );
   }
 
-  cutToInput(input = null) {
-    this.transitionToInput('Cut', input);
+  cutToInput( input = null ) {
+    this.transitionToInput( 'Cut', input );
   }
 
-  transition(transition_type = 'Cut') {
-    this.transitionToInput(transition_type);
+  transition( transition_type = 'Cut' ) {
+    this.transitionToInput( transition_type );
   }
 
-  fade(duration = 1000) {
-    this.fadeToInput(null, duration);
+  fade( duration = 1000 ) {
+    this.fadeToInput( null, duration );
   }
 
   cut() {
-    this.cutToInput(null);
+    this.cutToInput( null );
   }
 
   // selected can be a name or an index
-  setInputText(input = null, text = '', selected = 0) {
+  setInputText( input = null, text = '', selected = 0 ) {
     let r = {
       Function: 'SetText',
       Value: text,
     };
-    if (isNaN(+selected)) r.SelectedName = selected;
+    if ( isNaN( +selected ) ) r.SelectedName = selected;
     else r.SelectedIndex = +selected;
-    if (input != null) r.Input = input;
-    this.api(r);
+    if ( input != null ) r.Input = input;
+    this.api( r );
   }
 
   // type can be In, Out, On, Off or nothing for toggle
   // In/Out do a transition, On/Off do a cut
-  setOverlay(overlay = 1, type = '', input = null, seconds = null) {
-    if (this.previousTimer) clearTimeout(this.previousTimer);
+  setOverlay( overlay = 1, type = '', input = null, seconds = null ) {
+    if ( this.previousTimer ) clearTimeout( this.previousTimer );
 
-    if (isNaN(+overlay)) overlay = 1;
+    if ( isNaN( +overlay ) ) overlay = 1;
     let r = {
       Function: `OverlayInput${+overlay}${type}`,
     };
-    if (input != null) r.Input = input;
-    this.api(r);
+    if ( input != null ) r.Input = input;
+    this.api( r );
 
-    if (seconds != null && (type == 'In' || type == 'On')) {
+    if ( seconds != null && ( type == 'In' || type == 'On' ) ) {
       let flipped;
-      switch (type) {
+      switch ( type ) {
         case 'In':
           flipped = 'Out';
           break;
@@ -391,17 +395,17 @@ class VmixController extends Module {
           flipped = 'Off';
       }
       this.previousTimer = setTimeout(
-        () => this.setOverlay(overlay, flipped, input),
+        () => this.setOverlay( overlay, flipped, input ),
         seconds * 1000
       );
     }
   }
 
-  triggerStream(shouldStart = true, stream = 0) {
-    this.api({
+  triggerStream( shouldStart = true, stream = 0 ) {
+    this.api( {
       Function: shouldStart ? 'StartStreaming' : 'StopStreaming',
       Value: stream,
-    });
+    } );
   }
 }
 

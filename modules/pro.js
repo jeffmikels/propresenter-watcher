@@ -9,6 +9,7 @@ class ProController extends Module {
   static name = 'pro';
   static niceName = 'ProPresenter Controller';
   static supportsMultiple = true;
+  static instances = [];
   static get master() {
     for ( let i of ProController.instances ) {
       if ( i.master ) return i;
@@ -25,10 +26,15 @@ class ProController extends Module {
     return this.sd.slides;
   }
 
-  constructor ( config ) {
+  constructor ( config, reset = false ) {
     super( config );
 
-    let { host, port, sd_pass, version = 6, remote_pass } = config;
+    if ( reset ) {
+      for ( let i of ProController.instances ) {
+        i.dispose();
+      }
+      ProController.instances.length = 0;
+    }
 
     // store in the static instances list
     this.id = ProController.instances.length;
@@ -39,6 +45,12 @@ class ProController extends Module {
     this.follower = false;
     // this.options = options;
 
+    this.updateConfig( config );
+
+  }
+
+  updateConfig( config ) {
+    let { host, port, sd_pass, version = 6, remote_pass } = config;
     this.host = host;
     this.port = port;
     this.version = version;
@@ -46,7 +58,10 @@ class ProController extends Module {
     this.remote_pass = remote_pass;
 
     // setup connections
+    if ( this.sd ) this.sd.removeAllListeners();
     this.sd = new ProSDClient( host, port, sd_pass, version, this );
+
+    if ( this.remote ) this.remote.removeAllListeners();
     this.remote = new ProRemoteClient( host, port, remote_pass, version, this );
 
     // exposes the names of the events available on this emitter
