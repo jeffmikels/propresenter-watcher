@@ -206,6 +206,19 @@ class OBSController extends Module {
       )
     );
 
+    this.registerTrigger(
+      new ModuleTrigger(
+        'obsvisible',
+        'toggles visibility of a specific scene item, defaults to toggle',
+        [
+          new ModuleTriggerArg( 'source', 'string', '', false ),
+          new ModuleTriggerArg( 'onoff', 'bool', 'turn source on or off', true ),
+          new ModuleTriggerArg( 'scene', 'bool', 'scene in which to toggle, defaults to current scene', true ),
+        ],
+        ( _, source, onoff = null, scene = null ) => ( this.setSceneItemRender( source, onoff, scene ) )
+      )
+    );
+
     this.updateConfig( config );
   }
 
