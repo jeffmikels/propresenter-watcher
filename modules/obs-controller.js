@@ -33,19 +33,20 @@ class OBSController extends Module {
     TODO: use catch on all this.obs.send commands !!!
 
     TRIGGERS:
-      obs['jsonstring'] -> this.api
-      obsstream[onoff] -> this.setStream(onoff)
-      obsrecord[onoff] -> this.setRecord(onoff)
-      obsoutput[output?,onoff] -> this setOutput(output)
-      obstext[sourcename,text] -> this setSourceText()
-      obspreview[scene] -> this.setPreview()
-      obscut[scene?] -> this.cutToScene()
-      obsfade[scene?,duration?] -> this.fadeToScene()
-      obstransition[scene?,transition?,duration?] -> this.transitionToScene();
-      obsmute[source,onoff] -> this.setSourceMute()
+      [x] ~slideupdate~ -> this.setSourceText(...);
+      [x] obs['jsonstring'] -> this.api
+      [x] obsstream[onoff] -> this.setStream(onoff)
+      [x] obsrecord[onoff] -> this.setRecord(onoff)
+      [x] obsoutput[output?,onoff] -> this setOutput(output)
+      [x] obstext[sourcename,text] -> this setSourceText()
+      [x] obspreview[scene] -> this.setPreview()
+      [x] obscut[scene?] -> this.cutToScene()
+      [x] obsfade[scene?,duration?] -> this.fadeToScene()
+      [x] obstransition[scene?,transition?,duration?] -> this.transitionToScene();
+      [x] obsmute[source,onoff] -> this.setSourceMute()
 
       // using SetSceneItemRender
-      obsactivate[sourcename, onoff, scenename?] -> this.setSourceActive
+      [x] obsactivate[sourcename, onoff, scenename?] -> this.setSourceActive
     	
       note:
         modifying a Source will show up everywhere that source shows up, but
@@ -100,7 +101,108 @@ class OBSController extends Module {
             false
           ),
         ],
-        ( _, data = null ) => ( data == null ? null : this.api( data ) )
+        ( _, data = null ) => ( data == null ? null : this.multiSend( data ) )
+      )
+    );
+
+    this.registerTrigger(
+      new ModuleTrigger(
+        'obsstream',
+        'toggles the obs stream on or off, leave blank to just toggle',
+        [ new ModuleTriggerArg( 'onoff', 'bool', '', true ), ],
+        ( _, onoff = null ) => ( this.setStreaming( onoff ) )
+      )
+    );
+
+    this.registerTrigger(
+      new ModuleTrigger(
+        'obsrecord',
+        'toggles the obs recording on or off, leave blank to just toggle',
+        [ new ModuleTriggerArg( 'onoff', 'bool', '', true ), ],
+        ( _, onoff = null ) => ( this.setRecording( onoff ) )
+      )
+    );
+
+    this.registerTrigger(
+      new ModuleTrigger(
+        'obsoutput',
+        'sets the obs output on or off, default is "on"',
+        [
+          new ModuleTriggerArg( 'outputname', 'string', '', false ),
+          new ModuleTriggerArg( 'onoff', 'bool', '', true ),
+        ],
+        ( _, outputname, onoff = true ) => ( this.setOutput( outputname, onoff ) )
+      )
+    );
+
+    this.registerTrigger(
+      new ModuleTrigger(
+        'obstext',
+        'sets the text of a source',
+        [
+          new ModuleTriggerArg( 'sourcename', 'string', '', false ),
+          new ModuleTriggerArg( 'text', 'string', '', true ),
+        ],
+        ( _, source, text = '' ) => ( this.setSourceText( source, text ) )
+      )
+    );
+
+    this.registerTrigger(
+      new ModuleTrigger(
+        'obspreview',
+        'sets the obs scene to preview. No effect unless studio mode.',
+        [
+          new ModuleTriggerArg( 'scene', 'string', '', false ),
+        ],
+        ( _, scene ) => ( this.setPreviewScene( scene ) )
+      )
+    );
+
+    this.registerTrigger(
+      new ModuleTrigger(
+        'obscut',
+        'cuts to a specific scene, defaults to whatever is preview',
+        [
+          new ModuleTriggerArg( 'scenename', 'string', '', false ),
+        ],
+        ( _, scene ) => ( this.cutToScene( scene ) )
+      )
+    );
+
+    this.registerTrigger(
+      new ModuleTrigger(
+        'obsfade',
+        'fades to a specific scene, defaults to whatever is preview',
+        [
+          new ModuleTriggerArg( 'scenename', 'string', '', true ),
+          new ModuleTriggerArg( 'duration', 'number', 'in milliseconds', true ),
+        ],
+        ( _, scene, duration ) => ( this.fadeToScene( scene, duration ) )
+      )
+    );
+
+    this.registerTrigger(
+      new ModuleTrigger(
+        'obstransition',
+        'transition to specific scene with specific transition and duration, defaults to whatever is in preview',
+        [
+          new ModuleTriggerArg( 'scenename', 'string', '', true ),
+          new ModuleTriggerArg( 'transition', 'string', '"Fade" or "Cut" or something else', true ),
+          new ModuleTriggerArg( 'duration', 'number', 'in milliseconds', true ),
+        ],
+        ( _, scene = null, transition = null, duration = null ) => ( this.transitionToScene( scene, transition, duration ) )
+      )
+    );
+
+    this.registerTrigger(
+      new ModuleTrigger(
+        'obsmute',
+        'mutes a specific source, defaults to toggle',
+        [
+          new ModuleTriggerArg( 'source', 'string', '', false ),
+          new ModuleTriggerArg( 'onoff', 'bool', 'turn mute on or off', true ),
+        ],
+        ( _, source, onoff = null ) => ( this.setSourceMute( source, onoff ) )
       )
     );
 
@@ -118,14 +220,26 @@ class OBSController extends Module {
   }
 
   getInfo() {
-    let r = super.getInfo();
-    r.sources = this.sources;
-    r.scenes = this.scenes;
-    r.currentSceneName = this.currentSceneName;
+    let r = { ...super.getInfo(), ...this.getStatus() };
     return r;
   }
 
+  getStatus() {
+    let r = {}
+    r.studioMode = this.studioMode;
+    r.currentSceneName = this.currentSceneName;
+    r.previewSceneName = this.previewSceneName;
+    r.defaultTransition = this.defaultTransition;
+    r.defaultTransitionDuration = this.defaultTransitionDuration;
+    r.sources = this.sources;
+    r.scenes = this.scenes;
+
+    return r;
+  }
+
+
   async connect() {
+    console.log( 'INFO: connecting to obs' )
     if ( this.obs.connected ) this.obs.disconnect();
 
     this.connected = false;
@@ -144,8 +258,9 @@ class OBSController extends Module {
         // this.on( 'SourceCreated', ( d ) => this.handleSourceCreated(d) );
         // this.on( 'SourceDestroyed', ( d ) => this.handleSourceDestroyed(d) );
 
-        this.getStatus();
+        return this.getOBSStatus();
       } )
+      .then( () => { this.emit( 'connected' ) } )
       .catch( ( err ) => {
         // Promise convention dicates you have a catch on every chain.
         this.log( err );
@@ -160,19 +275,33 @@ class OBSController extends Module {
     this.emit( 'update', data );
   }
 
+  safeSend( key, data = null ) {
+    console.log( `OBSSEND: ${key} ${JSON.stringify( data, null, 2 )}` );
+    if ( data != null )
+      return this.obs.send( key, data ).catch( ( err ) => {
+        return err;
+      } )
+    else
+      return this.obs.send( key ).catch( ( err ) => {
+        return err;
+      } )
+  }
+
   // obj can contain multiple commands
   // JavaScript preserves the ordering of the keys
-  async api( obj ) {
+  async multiSend( obj ) {
+    console.log( `OBSMULTISEND: ${JSON.stringify( obj, null, 2 )}` );
     if ( !this.connected ) return;
 
     let retval = [];
     for ( let key of Object.keys( obj ) ) {
       // it's a promise so we can wait for the results
       retval.push(
-        await this.obs.send( key, obj[ key ] ).catch( ( err ) => {
-          return err;
-        } )
-      );
+        await this.obs.send( key, obj[ key ] )
+          .catch( ( err ) => {
+            return err;
+          }
+          ) );
     }
     return retval;
   }
@@ -198,34 +327,43 @@ class OBSController extends Module {
   }
 
   // GLOBAL GETTERS
-  async getStatus() {
+  async getOBSStatus() {
+    console.log( 'requesting status details from OBS' );
     // some of the api requires studio mode
-    this.setStudioMode( true );
-    let [ sources, scenes, preview ] = await this.api( {
+    let [ studio, sources, scenes, preview, trans ] = await this.multiSend( {
+      GetStudioModeStatus: {},
       GetSourcesList: {},
       GetSceneList: {},
       GetPreviewScene: {},
-    } );
+      GetCurrentTransition: {},
+    } ).catch( e => console.log( e ) );
+    this.studioMode = studio.studioMode;
+    this.currentSceneName = scenes.currentScene;
+    this.previewSceneName = preview.name;
+    this.defaultTransition = trans.name;
+    this.defaultTransitionDuration = trans.duration ?? 0;
+    // console.log( [ studio, sources, scenes, preview ] );
     this.updateScenes( scenes.scenes );
     this.updateSources( sources.sources );
-    this.currentSceneName = scenes.currentScene;
-    this.previewSceneName = preview.sceneName;
-    this.notify();
   }
 
   // GLOBAL SETTERS
-  async setStudioMode( onoff = true ) {
+  setStudioMode( onoff = true ) {
     return onoff
-      ? await this.obs.send( 'EnableStudioMode' )
-      : await this.obs.send( 'DisableStudioMode' );
+      ? this.safeSend( 'EnableStudioMode' )
+      : this.safeSend( 'DisableStudioMode' );
   }
 
   // SCENE SETTERS
-  async setPreviewScene( scene ) {
-    return await this.obs.send( 'SetPreviewScene', { 'scene-name': scene } );
+  setPreviewScene( scene ) {
+    return this.safeSend( 'SetPreviewScene', { 'scene-name': scene } );
   }
 
-  async transitionToScene( transition = null, scene = null, duration = null ) {
+  setCurrentScene( scene ) {
+    return this.safeSend( 'SetCurrentScene', { 'scene-name': scene } );
+  }
+
+  transitionToScene( transition = null, scene = null, duration = null ) {
     // remember, Javascript will preserve the insertion order of these keys
     let cmd = {};
     if ( transition != null )
@@ -238,36 +376,38 @@ class OBSController extends Module {
     } else {
       cmd.SetCurrentScene = { 'scene-name': scene };
     }
-    return await this.api( cmd );
+    return this.multiSend( cmd );
   }
 
   // when input is null, we toggle between program and preview
-  async fadeToScene( scene = null, duration = null ) {
-    return await this.transitionToScene( 'Fade', scene, duration );
+  fadeToScene( scene = null, duration = null ) {
+    return this.transitionToScene( 'Fade', scene, duration );
   }
 
-  async cutToScene( scene = null ) {
-    return await this.transitionToScene( 'Cut', scene );
+  cutToScene( scene = null ) {
+    return this.transitionToScene( 'Cut', scene );
   }
 
-  async transition( transition_type = null ) {
-    return await this.transitionToScene( transition_type );
+  transition( transition_type = null ) {
+    return this.transitionToScene( transition_type );
   }
 
-  async fade( duration = null ) {
-    return await this.fadeToScene( null, duration );
+  fade( duration = null ) {
+    return this.fadeToScene( null, duration );
   }
 
-  async cut() {
-    return await this.cutToScene( null );
+  cut() {
+    return this.cutToScene( null );
   }
 
   // SOURCE SETTERS
-  async setSourceMute( source, onoff = true ) {
-    return await this.obs.send( 'SetMute', { source, mute: onoff } );
+  setSourceMute( source, onoff = null ) {
+    if ( onoff == null )
+      return this.safeSend( 'ToggleMute', { source } );
+    return this.safeSend( 'SetMute', { source, mute: onoff } );
   }
 
-  async setSourceText( source = null, text = '' ) {
+  setSourceText( source = null, text = '' ) {
     // DEPRECATED FUNCTION
     // SetTextFreetype2Properties
     // input type: text_ft2_source_v2
@@ -282,18 +422,57 @@ class OBSController extends Module {
     // also, OBS won't actually update the text source if text is empty
     text = text == '' ? ' ' : text;
     source = source ?? this.default_title_source;
-    return await this.api( {
+    return this.multiSend( {
       SetTextFreetype2Properties: { source, text },
       SetTextGDIPlusProperties: { source, text },
     } );
   }
-}
 
-class OBSCommand {
-  constructor ( { command, options } ) {
-    this.command = command;
-    this.options = options;
+  setStreaming( onoff = null ) {
+    if ( onoff == null ) return this.safeSend( 'StartStopStreaming' );
+    if ( onoff ) return this.safeSend( 'StartStreaming' );
+    return this.safeSend( 'StopStreaming' );
+  }
+
+  setRecording( onoff = null ) {
+    if ( onoff == null ) return this.safeSend( 'StartStopRecording' );
+    if ( onoff ) return this.safeSend( 'StartRecording' );
+    return this.safeSend( 'StopRecording' );
+  }
+
+  setOutput( output, onoff ) {
+    if ( onoff == true ) return this.safeSend( 'StartOutput', { outputName: output } );
+    else return this.safeSend( 'StopOutput', { outputName: output } );
+  }
+
+  async setSceneItemRender( sourcename, onoff, scenename = null ) {
+    await this.getOBSStatus();
+    let prog = this.currentSceneName;
+    let prev = this.previewSceneName;
+    let r = [];
+    let args = {
+      source: sourcename,
+      render: onoff,
+    }
+    if ( scenename != null ) args[ 'scene-name' ] = scenename;
+    r.push( await this.safeSend( 'SetSceneItemRender', args ) );
+
+    if ( this.studioMode ) {
+      if ( scenename == prog ) {
+        r.push( await this.setCurrentScene( prog ) );
+        setTimeout( () => this.setPreviewScene( prev ), this.defaultTransitionDuration + 100 );
+      }
+    }
+    return r;
   }
 }
+
+
+// class OBSCommand {
+//   constructor ( { command, options } ) {
+//     this.command = command;
+//     this.options = options;
+//   }
+// }
 
 module.exports.OBSController = OBSController;

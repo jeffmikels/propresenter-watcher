@@ -264,6 +264,7 @@
       #side-menu a:hover {
         background-color: var(--medium);
       }
+
       #status-bar {
         font-weight: 700;
       }
@@ -271,6 +272,10 @@
       #titlebar h1 {
         font-weight: 100;
         font-size: 35px;
+      }
+
+      #titlebar.inactive {
+        background: red;
       }
 
       #content-pane {
@@ -380,7 +385,7 @@
         </status>
       </div>
 
-      <div id="titlebar">
+      <div id="titlebar" :class="{active: pro_status.connected, inactive: !pro_status.connected}">
         <h1>ProPresenter Master Control</h1>
       </div>
 
