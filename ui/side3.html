@@ -27,12 +27,14 @@
         background: black;
         color: ivory;
         font-family: Mulish, sans-serif;
-        font-weight: 800;
+        font-weight: 500;
         box-sizing: border-box;
         --w: 640px;
         --h: 1080px;
         --pl: 10px;
         --pr: 10px;
+        --dark-text-background: rgba(255, 255, 255, 0.3);
+        --light-text-background: rgba(0, 0, 0, 0.5);
       }
       #lower3 {
         position: fixed;
@@ -45,7 +47,6 @@
         box-sizing: border-box;
         overflow: hidden;
         box-sizing: border-box;
-        font-weight: 800;
         font-size: 100px;
         letter-spacing: -1px;
         text-shadow: 2px 2px 9px rgba(0, 0, 0, 1); /* BLACK SHADOW (SECOND ONE WINS) */
@@ -61,6 +62,7 @@
         width: var(--w);
         height: var(--h);
         object-fit: cover;
+        object-position: right;
       }
       #lower3 #textwrapper {
         position: absolute;
@@ -68,7 +70,7 @@
         left: 0;
         right: 0;
         bottom: 0;
-        padding: 10px var(--pr) 10px var(--pl); /* PADDING SHOULD MATCH scaleText FUNCTION */
+        padding: 10px 0 10px 0; /* VERTICAL PADDING SHOULD MATCH WHATS IN scaleText FUNCTION */
         display: flex;
         align-items: center;
         transition: opacity 0.7s;
@@ -77,6 +79,10 @@
       }
       #lower3 #textwrapper.showtext {
         opacity: 1;
+      }
+      #lower3 #textwrapper #text {
+        padding: 10px var(--pr) 16px var(--pl);
+        background-color: var(--dark-text-background);
       }
       #lower3 #caption {
         transition: all 0s;
@@ -212,13 +218,13 @@
           },
           scaleText() {
             // scale text to fit
+            let i = 52;
             let el = document.getElementById('text');
-            el.style.fontSize = '100px';
+            el.style.fontSize = `${i}px`;
 
             let l3 = document.getElementById('lower3');
             let padding = 10;
             let targetHeight = l3.offsetHeight - padding * 2;
-            var i = 100;
             while (el.offsetHeight > targetHeight) {
               i--;
               console.log(i);
