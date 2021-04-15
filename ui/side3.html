@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta http-equiv="x-ua-compatible" content="ie=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
-    <title>ProPresenter Watcher Lower Third</title>
+    <title>ProPresenter Watcher Side Third</title>
 
     <link rel="preconnect" href="https://fonts.gstatic.com" />
     <link
@@ -13,7 +13,12 @@
     />
 
     <style media="screen">
-      html,
+      html {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+      }
       body {
         margin: 0;
         width: 100%;
@@ -24,17 +29,24 @@
         font-family: Mulish, sans-serif;
         font-weight: 800;
         box-sizing: border-box;
+        --w: 640px;
+        --h: 1080px;
+        --pl: 10px;
+        --pr: 10px;
       }
       #lower3 {
-        position: relative;
-        height: 14vw;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: var(--w);
+        height: var(--h);
+        /* transform: scale(0.5); */
+        /* height: 14vw; */
         box-sizing: border-box;
-        padding: 0px 22vw 0px 1vw; /* FOR LOGO ON RIGHT (SECOND ONE WINS)*/
-        padding: 0px 1vw 0px 15vw; /* FOR LOGO ON LEFT  (SECOND ONE WINS) (default) */
         overflow: hidden;
         box-sizing: border-box;
         font-weight: 800;
-        font-size: 60pt;
+        font-size: 100px;
         letter-spacing: -1px;
         text-shadow: 2px 2px 9px rgba(0, 0, 0, 1); /* BLACK SHADOW (SECOND ONE WINS) */
         text-shadow: 1px 0px 9px rgba(255, 255, 255, 0.25), 0px 1px 9px rgba(255, 255, 255, 0.25),
@@ -46,17 +58,21 @@
         position: absolute;
         top: 0;
         left: 0;
-        width: 100%;
-        height: 14vw; /* LOWER THIRD ASPECT RATIO IS 100/14 (7.14) */
+        width: var(--w);
+        height: var(--h);
         object-fit: cover;
       }
       #lower3 #textwrapper {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        padding: 10px var(--pr) 10px var(--pl); /* PADDING SHOULD MATCH scaleText FUNCTION */
+        display: flex;
+        align-items: center;
         transition: opacity 0.7s;
         opacity: 0;
-        position: relative;
-        top: 50%;
-        transform: translateY(-50%);
-        line-height: 1;
         white-space: pre-line;
       }
       #lower3 #textwrapper.showtext {
@@ -197,15 +213,15 @@
           scaleText() {
             // scale text to fit
             let el = document.getElementById('text');
-            el.style.fontSize = '70px';
+            el.style.fontSize = '100px';
 
             let l3 = document.getElementById('lower3');
             let padding = 10;
             let targetHeight = l3.offsetHeight - padding * 2;
-            var i = 70;
+            var i = 100;
             while (el.offsetHeight > targetHeight) {
               i--;
-              // console.log(i);
+              console.log(i);
               el.style.fontSize = `${i}px`;
             }
           },

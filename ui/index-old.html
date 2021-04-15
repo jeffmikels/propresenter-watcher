@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta http-equiv="x-ua-compatible" content="ie=edge" />
+		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+		<title>ProPresenter Watcher</title>
+		<style media="screen">
+			body {
+				--body-width: 1200px;
+				margin: 10px auto;
+				width: 1200px;
+				background: black;
+				color: ivory;
+				font-family: Muli, sans-serif;
+				box-sizing: border-box;
+			}
+
+			#nav {
+				padding: 5px 0;
+			}
+			a, button {
+				text-decoration: none;
+				font-weight: 900;
+				color: red;
+			}
+			a:hover, a.btn:hover, button.btn:hover {
+				color: white;
+				background: #400;
+			}
+			a:visited {
+				color: purple;
+			}
+			a.btn, button.btn {
+				display: inline-block;
+				padding: 4px 10px;
+				text-transform: uppercase;
+				background: #222;
+				border: 1px solid #777;
+				border-radius: 4px;
+			}
+			
+			#app {
+				float: left;
+				width: 100%;
+				background: black;
+				color: ivory;
+				border: 1px solid ivory;
+				border-radius: 10px;
+				font-family: Muli, sans-serif;
+				padding: 10px;
+				box-sizing: border-box;
+			}
+			.main {
+				box-sizing: border-box;
+				position: relative;
+				width: 870px;
+				float: left;
+			}
+
+			.sidebar {
+				box-sizing: border-box;
+				position: relative;
+				width: 300px;
+				float: right;
+			}
+
+			clock {
+				position: fixed;
+				bottom: 10px;
+				right: 10px;
+				text-align: right;
+			}
+
+			h1 {
+				margin-top: 0;
+			}
+
+			li {
+				margin-bottom: 3px;
+				list-style: none;
+			}
+
+			label.text {
+				width: 300px;
+				display: inline-block;
+			}
+
+			input {
+				display: inline-block;
+				vertical-align: middle;
+				border: 1px solid #333;
+				border-radius: 2px;
+				background: none;
+				padding: 6px;
+				color: white;
+				font-family: Muli;
+			}
+
+			.box {
+				border: 1px solid #eee;
+				border-color: white;
+				border-radius: 3px;
+				background: #222;
+				padding: 20px;
+				font-size: 1.2em;
+				font-family: Muli;
+				font-weight: 600;
+				overflow-x:auto;
+				-ms-overflow-style: none;
+				scrollbar-width: none;
+			}
+			.box::-webkit-scrollbar {display:none;}
+			.current_slide .box {
+				border: 2px solid orange;
+			}
+
+			.disconnected {
+				border-color: red !important;
+			}
+			.connecting {
+				border-color: blue !important;
+			}
+
+			status {
+				position: fixed;
+				bottom: 10px;
+				left: 10px;
+				color: white;
+			}
+
+			.disconnected status {
+				color: red !important;
+			}
+
+			status .active {
+				color: green;
+			}
+
+			status .inactive {
+				color: red;
+			}
+
+			.vmix.sending {
+				color: blue;
+			}
+
+			.vmix.failed {
+				color: red;
+			}
+
+			.note {
+				white-space: pre;
+				font-size: 10px;
+				font-family: monospace;
+			}
+			.timer {
+				margin-bottom: 10px;
+			}
+			span.small {
+				font-size: 9px;
+			}
+			.logtext {
+				font-size: 9px;
+				white-space: pre-line;
+				overflow: hidden;
+			}
+			#lower3 {
+				border:none;
+				--iw: 100%;
+				width: 100%;
+				height: calc(var(--body-width) * .14);
+			}
+
+			input[type=checkbox] { zoom: 2; }
+
+			li.trigger-box {
+				border: 2px solid #333;
+				font-size:1.1em;
+			}
+			li.trigger-box label { display: flex; align-items: center; }
+			li.trigger-box.bulk { background: #333; }
+			li.trigger-box small { font-size: .7em; }
+			li.trigger-box input, li.trigger-box button { margin:0 10px 0 5px; }
+			.trigger-title {font-size: 1.2em;}
+			.trigger-description {font-size:.8em;margin-bottom:10px;}
+			.trigger-meta {overflow-x: auto; flex-grow:10;}
+			.trigger-meta h5 {margin-bottom: 0;}
+		</style>
+		<meta charset="UTF-8" />
+	</head>
+
+	<body>
+		<div id="app" :class="state">
+			<!-- STATUS BAR ITEMS -->
+			<clock v-if="pro_status.system_time">{{ pro_status.system_time.text }}</clock>
+			<status v-if="connected">
+				PP:
+				<span :class="{active: pro_status.active, inactive: !pro_status.active}">
+					{{ pro_status.active ? "ACTIVE" : "INACTIVE" }}
+				</span>
+			</status>
+
+			
+			<h1>
+				ProPresenter Master Control
+			</h1>
+
+			<iframe id="lower3" src="lower3.html"></iframe>
+
+			<!-- nav buttons -->
+			<div id="nav">
+				<a class="btn" href="lower3.html">Lower Third</a>
+				<a class="btn" href="sd.html">Simple Stage Display</a>
+				<a class="btn" href="presenter.html">Presenter Notes</a>
+				<a class="btn" href="presenter.html?mirror">TelePrompter</a>
+			</div>
+
+			<hr />
+
+			<!-- sidebar -->
+			<div class="sidebar" v-if="pro_status.slides">
+				<button class="btn" @click="prev">prev</button> <button class="btn" @click="next">next</button>
+				<div class="current_slide" v-if="pro_status.slides.current">
+					<h3>Current Slide</h3>
+					<div class="box">
+						{{ pro_status.slides.current.text }}
+						<div class="note">{{ pro_status.slides.current.notes.replace(/\n/,' &bull; ') }}</div>
+					</div>
+				</div>
+				<div class="next_slide" v-if="pro_status.slides.next">
+					<h3>Next Slide</h3>
+					<div class="box">
+						{{ pro_status.slides.next.text }}
+						<div class="note">{{ pro_status.slides.next.notes.replace(/\n/,' &bull; ') }}</div>
+					</div>
+				</div>
+				<div class="timers" v-if="pro_status.timers">
+					<h3>Timers</h3>
+					<div class="timer" v-for="timer in pro_status.timers">
+						<span class="small">{{ timer.uid }}</span>
+						<br />
+						{{ timer.text }} ({{ timer.seconds }}s)
+					</div>
+				</div>
+			</div>
+
+			<!-- COMPONENTS LIST -->
+			<div class="main">
+				<div>
+					<button class="btn" @click="show_config = !show_config">{{show_config ? 'Hide' : 'Show'}} Controllers Config</button>
+					<button class="btn" @click="show_triggers = !show_triggers">{{show_triggers ? 'Hide' : 'Show'}} Triggers</button>
+				</div>
+				<div v-if="show_config">
+					<h3>Controllers Configuration</h3>
+					<div v-for="controller in controllers">
+						<h4>{{controller.niceName}}</h4>
+						<ul>
+							<li v-for="value, key in controller.config" v-if="key != 'triggers'">
+								<label class="text">{{key}}</label>
+								<input @change="update_config" v-model="value" />
+							</li>
+						</ul>
+					</div>
+				</div>
+				<div v-if="show_triggers">
+					<h3>Triggers</h3>
+					<ul>
+						<li>
+							<label>
+								<input type="checkbox" v-model="allow_triggers" @change="update_allow_triggers" />
+								Enable / Disable All Triggers ({{ triggerstatus }})
+							</label>
+						</li>
+					</ul>
+					<hr />
+					<ul v-for="controller in controllers">
+						<li class="trigger-box bulk">
+							<label>
+								<input :disabled="!allow_triggers" type="checkbox" @change="update_controller(controller)" v-model="controller.enabled" />
+								<div class="trigger-meta">
+									<div class="trigger-title" style="display:inline-block;vertical-align:middle;">
+										<h4>{{ controller.niceName }} <span v-if="controller.requiresInstance">({{ controller.instanceName }})</span> - {{controller.enabled ? 'Enabled' : 'Disabled'}}</h4>
+									</div>
+								</div>
+								<button v-if="controller.enabled" @click="toggleExpand(controller)" class="btn">{{isExpanded(controller) ? '-' : '+'}}</button>
+							</label>
+						</li>
+						<li v-if="controller.enabled && isExpanded(controller)" v-for="trigger in controller.triggers" class="trigger-box">
+							<label>
+								<input :disabled="!controller.enabled || !allow_triggers" type="checkbox" @change="update_trigger(trigger)" v-model="trigger.enabled" />
+								<div class="trigger-meta">
+									<div class="trigger-title" style="display:inline-block;vertical-align: middle;">
+										<pre>[{{trigger.label}}]</pre>
+										<div class="trigger-description">{{trigger.description}}</div>
+										<div class="trigger-description">{{trigger.extrahelp}}</div>
+										<div v-if="trigger.args.length > 0">
+											<h5>Arguments:</h5>
+											<div style="margin-left: 10px;">
+												<div v-for="arg in trigger.args" class="trigger-arg">&lt;{{arg.name}}:{{arg.type}}&gt; ({{arg.description}})<br /><small>{{arg.help}}</small></div>
+											</div>
+										</div>
+										<div v-if="trigger.examples.length > 0">
+											<h5>Examples:</h5>
+											<div style="margin-left: 10px;">
+												<div class="trigger-example" v-for="example in trigger.examples">
+													<pre><code>{{example}}</code></pre>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+							</label>
+						</li>
+					</ul>
+				</div>
+
+				<div class="logtext">
+					{{ logtext }}
+				</div>
+			</div>
+		</div>
+
+		<script type="text/javascript" src="lib/vue.js"></script>
+		<!-- <script src="https://cdn.jsdelivr.net/npm/vue"></script> -->
+
+		<!-- main code goes here -->
+		<script type="text/javascript">
+			let ws;
+			let reconnectTime = 3000;
+			let reconnectTimer = 0;
+			let app = new Vue({
+				el: "#app",
+				data: {
+					allow_triggers: true,
+					show_config: false,
+					show_triggers: false,
+					config: {},
+					expanded: [],
+					controllers: [],
+					pro_status: {}, // status of the propresenter master
+					status: "",
+					connected: false,
+					connecting: false,
+					logs: [],
+				},
+				computed: {
+					state() {
+						return this.connected ? "connected" : this.connecting ? "connecting" : "disconnected";
+					},
+					triggerstatus(){
+						return this.allow_triggers ? 'enabled':'disabled';
+					},
+					logtext() {
+						if (this.logs.length > 8) {
+							this.logs.splice(0, this.logs.length - 8);
+						}
+						return this.logs.join("\n");
+					},
+				},
+				methods: {
+					isExpanded(controller) {
+						let i = this.expanded.indexOf( controller.uuid );
+						return i > -1;
+					},
+					toggleExpand(controller) {
+						let i = this.expanded.indexOf(controller.uuid);
+						if (i == -1) this.expanded.push(controller.uuid);
+						else this.expanded.splice(i);
+					},
+					disable_controller(controller) {
+						for (let t of controller.triggers) t.enabled = controller.enabled;
+					},
+					update_midi() {
+						ws.bettersend("update_midi", this.selected_port);
+					},
+					update_config() {
+						ws.bettersend("config", this.config);
+					},
+					update_allow_triggers() {
+						ws.bettersend("toggle_allow_triggers", this.allow_triggers);
+					},
+					update_controller(controller) {
+						ws.bettersend("update_controller", controller);
+					},
+					update_trigger( trigger ) {
+						ws.bettersend( "update_trigger", trigger );
+					},
+					next() { ws.bettersend( "next_slide" ) },
+					prev() { ws.bettersend( "prev_slide" ) },
+					log(s) {
+						console.log(s);
+
+						let t = s;
+						if (typeof s == "object") t = JSON.stringify(s);
+						this.logs.push(t);
+					},
+
+					getStatus() {
+						ws.bettersend("status");
+					},
+
+					connect() {
+						this.connecting = true;
+						this.log("attempting to reconnect to master control backend");
+
+						// connect the websocket
+						ws = new WebSocket(`ws://${document.location.host}`);
+						ws.bettersend = function(message = "", data = {}) {
+							ws.send(JSON.stringify({ message, data }));
+						};
+
+						ws.onmessage = (event) => {
+							let { message, data } = JSON.parse(event.data);
+							this.log(`"${message}" message received`);
+							switch (message) {
+								case "status":
+									this.config = data.config;
+									this.controllers = data.controllers;
+
+									this.allow_triggers = data.allow_triggers;
+									
+									this.pro_status = data.pro_status;
+									break;
+								case "vmix":
+									this.vmix_status = data;
+									break;
+							}
+							console.log(message);
+							console.log(data);
+						};
+						ws.onclose = (event) => {
+							this.connected = false;
+							this.log(`disconnected from watcher service... reconnecting in ${reconnectTime / 1000} seconds`);
+							reconnectTimer = setTimeout(() => {
+								this.connect();
+							}, reconnectTime);
+						};
+						ws.onopen = (event) => {
+							this.connected = true;
+							this.connecting = false;
+							this.log("Connected to watcher service");
+							this.getStatus();
+						};
+					},
+				},
+				mounted: function() {
+					this.connect();
+				},
+			});
+		</script>
+	</body>
+</html>
