@@ -510,7 +510,7 @@ function getStatus() {
 	if ( lower3.text == '' && pro.slides.current.text != '' ) {
 		lower3.text = pro.slides.current.text;
 		lower3.html = pro.slides.current.text;
-		lower3.caption = pro.slides.current.caption;
+		lower3.caption = '';
 	}
 	return {
 		config,

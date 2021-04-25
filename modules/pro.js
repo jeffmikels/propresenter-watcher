@@ -121,7 +121,10 @@ class ProController extends Module {
     // r.sd = this.sd.status();
     return r;
   }
-
+  reconnect() {
+    this.remote.connect();
+    this.sd.connect();
+  }
   fullStatus() {
     return {
       ...this.status(),
@@ -256,14 +259,6 @@ class ProSDClient extends EventEmitter {
       return;
     }
 
-    this.ws.on( 'error', ( err ) => {
-      this.parent.log( 'ProPresenter WebSocket Error:' );
-      // this.parent.log(err);
-      this.ws.terminate();
-      this.reconnect( 30 );
-      this.notify();
-    } );
-
     this.ws.on( 'message', ( data ) => {
       this.check( JSON.parse( data ) );
       this.notify();
@@ -282,6 +277,15 @@ class ProSDClient extends EventEmitter {
       this.active = false;
       this.notify();
     } );
+
+    this.ws.on( 'error', ( err ) => {
+      this.parent.log( 'ProPresenter WebSocket Error:' );
+      // this.parent.log(err);
+      this.ws.terminate();
+      this.reconnect( 30 );
+      this.notify();
+    } );
+
   }
 
   send( Obj ) {
@@ -405,7 +409,21 @@ class ProRemoteClient extends EventEmitter {
     this.notify();
   }
 
+  reconnect( delay = 0 ) {
+    this.parent.log( `Attempting reconnect in ${delay} seconds.` );
+    clearTimeout( this.reconnectTimeout );
+    this.reconnectTimeout = setTimeout( () => {
+      this.connect();
+    }, delay * 1000 );
+  }
+
+
   connect() {
+    this.connected = false;
+    this.controlling = false;
+
+    clearTimeout( this.reconnectTimeout );
+
     let url = `ws://${this.host}:${this.port}/remote`;
     console.log( `ProRemote: connecting to ${url}` );
     if ( this.ws ) this.close();
@@ -429,11 +447,13 @@ class ProRemoteClient extends EventEmitter {
     this.ws.on( 'close', () => {
       this.connected = false;
       this.controlling = false;
+      this.reconnect( 10 );
       this.notify();
     } );
     this.ws.on( 'error', () => {
       this.connected = false;
       this.controlling = false;
+      this.reconnect( 30 );
       this.notify();
     } );
   }
