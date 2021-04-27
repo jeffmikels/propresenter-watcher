@@ -550,11 +550,12 @@ function triggerStatus() {
 	return retval;
 }
 function fireTriggers( tagname, args = [], proInstance ) {
+	Log( `\nTRIGGERS FOR: ${tagname}` );
 	let used = false;
 	configuredTriggers.forEach( ( t ) => {
-		if ( t.tagname == tagname ) {
-			console.log( `TRIGGER: ${tagname}` );
-			Log( t.doc() );
+		if ( t.enabled && t.tagname == tagname ) {
+			let { parentName, label, description } = t.doc();
+			Log( `TRIGGER: ${parentName} - ${label}\n => ${description}` );
 			used = t.fireIfEnabled( args, proInstance ) || used;
 		}
 	} );
