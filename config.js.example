@@ -1,3 +1,6 @@
+// this configuration file is overridden by whatever is in
+// $HOME/.config/pro-presenter-control.json
+
 const config = {
 	UI_SERVER_PORT: 7000,
 	LOWER3_IMAGE: "/lower3.jpg",
@@ -110,6 +113,17 @@ const config = {
 				port: 51234,
 			},
 		],
+
+    // OSC SETTINGS
+    // osc: {
+    // 	host: "192.168.50.13",   // telnet connections like integer port numbers
+    // 	port: 2323,            // must be an integer
+    // }
+
+    // X32 SETTINGS
+    // x32: {
+    //	host: "192.168.50.10",   // telnet connections like integer port numbers
+    //}
 
 		// ONYX SETTINGS
 		// onyx: {

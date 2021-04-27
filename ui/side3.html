@@ -65,6 +65,7 @@
         object-position: right;
       }
       #lower3 #textwrapper {
+        /* transition: opacity 0.7s; */
         position: absolute;
         top: 0;
         left: 0;
@@ -73,7 +74,6 @@
         padding: 10px 0 10px 0; /* VERTICAL PADDING SHOULD MATCH WHATS IN scaleText FUNCTION */
         display: flex;
         align-items: center;
-        transition: opacity 0.7s;
         opacity: 0;
         white-space: pre-line;
       }
@@ -85,7 +85,7 @@
         background-color: var(--dark-text-background);
       }
       #lower3 #caption {
-        transition: all 0s;
+        /* transition: all 0s; */
         transform: translateX(100%);
         font-weight: 700;
         font-style: italic;
@@ -105,7 +105,7 @@
       }
       #lower3.hascaption #caption {
         transform: translateX(0%);
-        transition: all 1s;
+        /* transition: all 1s; */
       }
       span.blank {
         color: #ffc552;
@@ -116,10 +116,10 @@
         font-weight: 900;
         letter-spacing: -2px;
       }
-      .fade-enter-active,
+      /* .fade-enter-active,
       .fade-leave-active {
         transition: opacity 0.5s;
-      }
+      } */
       .fade-enter, .fade-leave-to /* .fade-leave-active below version 2.1.8 */ {
         opacity: 0;
       }

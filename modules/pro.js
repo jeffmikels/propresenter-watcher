@@ -22,6 +22,8 @@ class ProController extends Module {
     return new ProController( config );
   }
 
+  get allInstances() { return this.constructor.instances; }
+
   get slides() {
     return this.sd.slides;
   }

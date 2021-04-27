@@ -16,7 +16,8 @@ const { v4: uuidv4 } = require( 'uuid' );
 /// events are:
 ///   update, sdupdate, remoteupdate, sddata, remotedata, msgupdate, slideupdate, sysupdate, timersupdate
 class Module extends EventEmitter {
-  static supportsMultiple = false;
+  // MULTI-INSTANCE MODULES MUST BE DEFINED
+  // AT THE MODULE LEVEL... SEE PRO.JS FOR EXAMPLE
 
   static name = 'module';
   static niceName = 'Module';
@@ -34,19 +35,17 @@ class Module extends EventEmitter {
   get supportsMultiple() {
     return this.constructor.supportsMultiple;
   }
-  get instanceName() {
-    return this._instanceName ?? this.id ?? this.uuid;
-  }
+
   triggers = []; // a list of ModuleTriggers
   triggersByTag = {};
   enabled = true;
   disposed = false;
 
-  constructor ( config = {} ) {
+
+  constructor ( config = {}, reset = false ) {
     super();
     this.config = config;
     this.uuid = uuidv4();
-    this._instanceName = config.name; // might be null
 
     // register custom triggers specified in the config
     if ( config.triggers ) {
@@ -86,6 +85,10 @@ class Module extends EventEmitter {
 
   log( s ) {
     this.emit( 'log', s );
+  }
+
+  notify( s ) {
+    this.emit( 'update', s );
   }
 
   // ModuleTrigger( tagname, description, args, callback )
@@ -211,8 +214,11 @@ class ModuleTrigger {
               val = parseFloat( arg ?? 0 );
               break;
             case 'string':
-            default:
               val = arg ?? '';
+              break;
+            case 'dynamic':
+            default:
+              val = arg;
           }
         }
       }

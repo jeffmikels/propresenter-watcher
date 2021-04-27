@@ -291,7 +291,7 @@ class VmixController extends Module {
   updateConfig( config ) {
     super.updateConfig( config );
     let { host, port, default_title_input } = config;
-    this.endpoint = `${host}:${port}/api/?`;
+    this.endpoint = `http://${host}:${port}/api/?`;
     this.default_title_input = default_title_input;
   }
 
