@@ -485,7 +485,6 @@
                   />
                 </li>
               </ul>
-              <button class="btn" @click="request_reconnect(controller)">UPDATE</button>
             </div>
           </div>
         </div>
@@ -657,10 +656,6 @@
           },
           disable_controller(controller) {
             for (let t of controller.triggers) t.enabled = controller.enabled;
-          },
-          request_reconnect() {
-            // ws.bettersend('request_reconnect', this.selected_port);
-            ws.bettersend('update_config', this.config);
           },
           update_midi() {
             ws.bettersend('update_midi', this.selected_port);

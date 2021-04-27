@@ -13,12 +13,12 @@
 	</head>
 
 	<body>
-		<div id="app" class="prompter">
+		<div id="app" class="prompter" :class="{mirror:mirror}">
 			<div id="main">
 				<div class="current" v-html="makeParas(slides.current.text)"></div>
-				<div class="current notes" v-html="slides.current.notes"></div>
+				<div class="current notes" v-html="codeless(slides.current.notes)"></div>
 				<div class="next" v-html="makeParas(slides.next.text)"></div>
-				<div class="next notes" v-html="slides.next.notes"></div>
+				<div class="next notes" v-html="codeless(slides.next.notes)"></div>
 			</div>
 			<div class="timers">
 				<div class="timer" :class="{negative: timer.text.match(/^-/)}" v-for="timer in timers" v-if="!timer.text.match(/--/)">
@@ -43,10 +43,17 @@
 					timers: {},
 					smalls: {},
 					stage_message: "",
+					mirror: document.location.href.match(/\?mirror/) != null,
 				},
 				computed: {},
-				filters: {},
+				filters: {
+				},
 				methods: {
+					codeless(s) {
+						s = s.replace( /\[([^\s]+)\].*?\[\/\1\]/gs, '' );
+						s = s.replace( /[^\s]+\[.*?\]/gs, '' );
+						return s;
+					},
 					makeParas(s = "") {
 						let items = s.split(/\n/).map((e) => `<p>${e}</p>`);
 						return items.join("");
@@ -73,10 +80,10 @@
 							console.log(`"${message}" message received`);
 							switch (message) {
 								case "status":
-									this.slides.current = data.pro6_status.slides.current;
-									this.slides.next = data.pro6_status.slides.next;
-									this.timers = data.pro6_status.timers;
-									this.stage_message = data.pro6_status.stage_message;
+									this.slides.current = data.pro_status.slides.current;
+									this.slides.next = data.pro_status.slides.next;
+									this.timers = data.pro_status.timers;
+									this.stage_message = data.pro_status.stage_message;
 
 									break;
 							}

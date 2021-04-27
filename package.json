@@ -1,20 +1,35 @@
 {
-	"name": "propresenter-watcher",
-	"version": "1.0.0",
-	"description": "Watches an active ProPresenter instance using the StageDisplay API and runs commands based on ProPresenter events.",
-	"main": "app.js",
-	"scripts": {
-		"test": "echo \"Error: no test specified\" && exit 1"
-	},
-	"author": "",
-	"license": "ISC",
-	"dependencies": {
-		"got": "^9.6.0",
-		"isomorphic-ws": "^4.0.1",
-		"midi": "^1.0.0",
-		"socket.io": "^2.2.0",
-		"telnet-client": "^1.2.4",
-		"ws": "^7.1.2"
-	},
-	"devDependencies": {}
+  "name": "propresenter-master-control",
+  "version": "1.0.0",
+  "description": "Watches an active ProPresenter instance using the StageDisplay API and runs commands based on ProPresenter events.",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "eslint -c .eslintrc.yml . --ext .js,.ts"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "got": "^9.6.0",
+    "isomorphic-ws": "^4.0.1",
+    "midi": "^1.0.0",
+    "obs-websocket-js": "^4.0.2",
+    "osc": "^2.4.1",
+    "socket.io": "^2.2.0",
+    "telnet-client": "^1.2.4",
+    "uuid": "^8.3.2",
+    "ws": "^7.1.2"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.13.15",
+    "@babel/eslint-parser": "^7.13.14",
+    "@babel/plugin-syntax-class-properties": "^7.12.13",
+    "@babel/preset-env": "^7.13.15",
+    "eslint": "^7.24.0",
+    "eslint-config-prettier": "^8.1.0",
+    "eslint-plugin-import": "^2.22.1",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-promise": "^4.3.1",
+    "prettier": "^2.2.1"
+  }
 }

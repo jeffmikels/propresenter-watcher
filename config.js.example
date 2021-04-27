@@ -1,3 +1,6 @@
+// this configuration file is overridden by whatever is in
+// $HOME/.config/pro-presenter-control.json
+
 const config = {
 	UI_SERVER_PORT: 7000,
 	LOWER3_IMAGE: "/lower3.jpg",
@@ -10,8 +13,8 @@ const config = {
 	// MIDI SETTINGS
 	MIDI_PORT: 4,
 
-	// LCC LIVE SETTINGS
-	LCC_LIVE_URL: "https://example.org:99999", // no final slash
+	// JM_APPS LIVE EVENT SETTINGS
+	JM_APPS_LIVE_URL: "https://example.org:99999", // no final slash
 
 	// VMIX SETTINGS
 	VMIX_HOST: "192.168.1.5:8088", // no final slash
@@ -24,6 +27,110 @@ const config = {
 	LOGGER_URL: "https://example.org/log/index.php",
 	LOGGER_KEY: "key",
 	USEWEBLOG: true,
+
+
+	// for any controller, you may configure
+	// additional triggers by adding a triggers array
+	// the trigger callback will be called with the 
+	// controller's instance as the first argument to the callback
+	// triggers look like this:
+	/*
+	triggers: [
+		{
+			tagname: 'tag',
+			description: 'description',
+			args: [
+				{
+					name: 'argname',
+					type: 'number|string|json|bool',
+					description: 'arg description',
+					optional: true|false
+				}
+			],
+			callback: (self, proInstance, ...args) => {self.doSomething();}
+		}
+	]
+	*/
+
+	controllers: {
+
+		// PROPRESENTER SETTINGS
+		// this is an array because we can have
+		// multiple propresenter instances
+		// any one of them can serve as the master
+		// and any of the rest of them can be 'followers'
+		// by default, the first one listed will be the master
+		pro: [
+			{
+				name: 'paul',
+				host: 'localhost',
+				port: 60157,
+				sd_pass: 'av',
+				remote_pass: 'control',
+				version: 6,
+				triggers: [],
+			},
+		],
+
+		// MIDI SETTINGS
+		midi: {
+			port: 4,
+		},
+
+    // enable the built-in http triggers
+    http: {},
+
+		// JM_APPS LIVE EVENT SETTINGS
+		jm_app_live_event: {
+			url: "https://example.com", // no final slash
+		},
+
+		// VMIX SETTINGS
+		vmix: {
+			host: "vmixip",        // ip / hostname only
+			port: 8088,            // this should be the http port, telnet port is always 8099
+			default_title_input: 10,
+		},
+
+		// OBS SETTINGS
+		obs: {
+			host: 'localhost',
+			port: 4444,
+			password: 'obs',
+			default_title_source: 'Pro Slide Text',
+		},
+
+		// BITFOCUS COMPANION (StreamDeck) SETTINGS
+		companion: [
+			{
+				name: 'paul',
+				host: '127.0.0.1',
+				port: 51234,
+			},
+			{
+				name: 'barnabas',
+				host: '127.0.0.2',
+				port: 51234,
+			},
+		],
+
+    // OSC SETTINGS
+    // osc: {
+    // 	host: "192.168.50.13",   // telnet connections like integer port numbers
+    // 	port: 2323,            // must be an integer
+    // }
+
+    // X32 SETTINGS
+    // x32: {
+    //	host: "192.168.50.10",   // telnet connections like integer port numbers
+    //}
+
+		// ONYX SETTINGS
+		// onyx: {
+		// 	host: "127.0.0.3",     // telnet connections like integer port numbers
+		// 	port: 2323,            // must be an integer
+		// }
+	},
 };
 
 module.exports = config;

@@ -1,3 +1,4 @@
+@import url("https://fonts.googleapis.com/css2?family=Lexend:wght@300;500;700&display=swap");
 html,
 body {
 	margin: 0;
@@ -10,12 +11,9 @@ body {
 body {
 	background: black;
 	color: ivory;
-	font-family: Muli, sans-serif;
-	font-weight: 600;
+	font-family: "Lexend", sans-serif;
+	font-weight: 500;
 	box-sizing: border-box;
-}
-
-body {
 	text-align: center;
 }
 
@@ -103,9 +101,16 @@ span.blank {
 
 .current {
 	color: yellow;
+	font-weight: 500;
+}
+.current.notes {
+	color: rgb(179, 253, 29);
+	font-size: 0.6em;
+	font-weight: 300;
 }
 
 .next {
 	color: grey;
 	font-size: 0.5em;
+	font-weight: 300;
 }
