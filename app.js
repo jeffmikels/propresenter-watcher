@@ -48,10 +48,10 @@ Object.prototype.clear = function () {
 const { ProController } = require( './modules/pro.js' );
 
 // Controller Modules for Known Products
-const { JMLiveEventController } = require( './modules/jm-live-event-controller.js' );
 const { VmixController } = require( './modules/vmix-controller.js' );
-const { CompanionController } = require( './modules/companion-controller.js' );
 const { X32Controller } = require( './modules/x32-controller.js' );
+const { JMLiveEventController } = require( './modules/jm-live-event-controller.js' );
+const { CompanionController } = require( './modules/companion-controller.js' );
 const { OscController } = require( './modules/osc-controller.js' );
 const { MidiController } = require( './modules/midi-controller.js' );
 const { OnyxController } = require( './modules/onyx-controller.js' );
@@ -67,10 +67,10 @@ const { HTTPController } = require( "./modules/http-controller.js" );
 
 const modulesByName = {};
 modulesByName[ ProController.name ] = ProController;
-modulesByName[ JMLiveEventController.name ] = JMLiveEventController;
 modulesByName[ VmixController.name ] = VmixController;
-modulesByName[ CompanionController.name ] = CompanionController;
 modulesByName[ X32Controller.name ] = X32Controller;
+modulesByName[ JMLiveEventController.name ] = JMLiveEventController;
+modulesByName[ CompanionController.name ] = CompanionController;
 modulesByName[ OscController.name ] = OscController;
 modulesByName[ MidiController.name ] = MidiController;
 modulesByName[ OnyxController.name ] = OnyxController;
@@ -374,6 +374,16 @@ function saveConfig() {
 }
 
 function registerAllConfigured() {
+	// ----- SETUP THE WEBLOGGER ------
+	if ( config.USEWEBLOG ) {
+		const WebLogger = require( './modules/web-logger.js' );
+		let weblog = new WebLogger( config.LOGGER_URL, config.LOGGER_KEY );
+		Log = function ( s, allowWebLog = true ) {
+			if ( allowWebLog ) weblog.log( s );
+			console.log( s );
+		};
+	}
+
 	Log( 'Registering all configured controllers' );
 
 	// since this might be the second time we have processed the configuration
@@ -394,17 +404,6 @@ function registerAllConfigured() {
 
 	// restore the global controller first
 	registerControllerWithTriggers( globalController );
-
-
-	// ----- SETUP THE WEBLOGGER ------
-	if ( config.USEWEBLOG ) {
-		const WebLogger = require( './modules/web-logger.js' );
-		let weblog = new WebLogger( config.LOGGER_URL, config.LOGGER_KEY );
-		Log = function ( s, allowWebLog = true ) {
-			if ( allowWebLog ) weblog.log( s );
-			console.log( s );
-		};
-	}
 
 	// now, process the configuration and create all expected controllers
 	// controller keys in the config file must match the static Module name of the controller
@@ -470,7 +469,9 @@ function setupProListeners() {
 		Log( data );
 		console.log( '--------- PRO SLIDE UPDATE -------------' );
 		console.log( data );
-		broadcast( 'slideupdate', data );
+
+		let foundTags = parseNotes( pro.slides.current.notes );
+		Log( foundTags );
 
 		// always update the lower3
 		// later triggers might override this
@@ -478,8 +479,6 @@ function setupProListeners() {
 		lower3.html = markdown( pro.slides.current.text );
 		lower3.caption = '';
 
-		let foundTags = parseNotes( pro.slides.current.notes );
-		Log( foundTags );
 
 		// for each found tag, fire the matching triggers
 		let used = false;
@@ -498,6 +497,7 @@ function setupProListeners() {
 		}
 		console.log( '-----------------------------------' );
 
+		broadcast( 'slideupdate', data );
 		broadcast( 'status', getStatus() ); // contains lower3 data
 		broadcast( 'pro_status', getProStatus() ); // contains proPresenter data
 	} );
