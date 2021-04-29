@@ -5,28 +5,13 @@
     <meta http-equiv="x-ua-compatible" content="ie=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
     <title>ProPresenter Master Control</title>
+    <link href="lib/vuetify.css" rel="stylesheet" />
+    <link
+      href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900"
+      rel="stylesheet"
+    />
+    <link href="lib/mdi/css/materialdesignicons.min.css" rel="stylesheet" />
     <style media="screen">
-      html,
-      html *,
-      body {
-        box-sizing: border-box;
-        margin: 0;
-        padding: 0;
-      }
-      body {
-        /* system fonts https://flaviocopes.com/css-system-fonts/#enter-system-fonts */
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu',
-          'Helvetica Neue', Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-          'Segoe UI Symbol';
-        background: rgba(94, 94, 94, 1);
-        color: ivory;
-
-        --dark: #222;
-        --medium: #333;
-        --light: #777;
-        --bright: #aaa;
-      }
-
       ::-webkit-scrollbar {
         background-color: var(--dark);
         width: 5px;
@@ -45,14 +30,6 @@
           'Segoe UI Symbol';
       }
 
-      #app {
-        display: grid;
-        grid-template-columns: 230px auto 220px;
-        grid-template-rows: 45px auto 30px;
-        width: 100vw;
-        height: 100vh;
-        overflow: hidden;
-      }
       #status-bar {
         grid-row: 3;
         grid-column: 1 / 4;
@@ -60,30 +37,11 @@
         padding: 4px 10px;
         font-size: 20px;
       }
-      #titlebar {
-        background-color: var(--dark);
-        grid-column: 1 / 4;
-        grid-row: 1 / 2;
-        padding: 0 10px;
-        overflow: hidden;
-      }
-      #side-menu {
-        grid-column: 1 / 2;
-        grid-row: 2 / 3;
-        background: var(--light);
-        overflow: auto;
-      }
+
       #content-pane {
         grid-column: 2/3;
-        grid-row: 2/3;
+        grid-row: 1/3;
         overflow: auto;
-      }
-      #rightside {
-        grid-column: 3/4;
-        grid-row: 2/3;
-        overflow: auto;
-        padding: 0 10px;
-        background: var(--dark);
       }
 
       h1 {
@@ -179,7 +137,7 @@
         font-size: 9px;
       }
       .logtext {
-        font-size: 9px;
+        font-size: 10px;
         white-space: pre-line;
         overflow: hidden;
       }
@@ -267,15 +225,6 @@
 
       #status-bar {
         font-weight: 700;
-      }
-
-      #titlebar h1 {
-        font-weight: 100;
-        font-size: 35px;
-      }
-
-      #titlebar.inactive {
-        background: red;
       }
 
       #content-pane {
@@ -371,211 +320,299 @@
 
   <body>
     <div id="app" :class="state">
-      <!-- STATUS BAR ITEMS -->
-      <div id="status-bar">
-        <!-- PRO CLOCK -->
-        <clock v-if="pro_status.system_time">{{ pro_status.system_time.text }}</clock>
+      <v-app>
+        <v-navigation-drawer app permanent>
+          <v-list-item>
+            <v-list-item-content>
+              <v-list-item-title class="title">Pages</v-list-item-title>
+            </v-list-item-content>
+          </v-list-item>
+          <v-divider></v-divider>
+          <v-list dense nav>
+            <v-list-item @click="state='home'">
+              <v-list-item-icon>
+                <v-icon>mdi-home</v-icon>
+              </v-list-item-icon>
+              <v-list-item-content>
+                <v-list-item-title>Home</v-list-item-title>
+              </v-list-item-content>
+            </v-list-item>
+            <v-list-item @click="state='configuration'">
+              <v-list-item-icon>
+                <v-icon>mdi-cog</v-icon>
+              </v-list-item-icon>
+              <v-list-item-content>
+                <v-list-item-title>Configuration</v-list-item-title>
+              </v-list-item-content>
+            </v-list-item>
+            <v-list-item @click="state='triggers'">
+              <v-list-item-icon>
+                <v-icon>mdi-list-status</v-icon>
+              </v-list-item-icon>
+              <v-list-item-content>
+                <v-list-item-title>Triggers</v-list-item-title>
+              </v-list-item-content>
+            </v-list-item>
+          </v-list>
+          <v-list-item>
+            <v-list-item-content>
+              <v-list-item-title class="title">Links</v-list-item-title>
+            </v-list-item-content>
+          </v-list-item>
+          <v-divider></v-divider>
+          <v-list dense nav>
+            <v-list-item href="lower3.html">
+              <v-list-item-icon>
+                <v-icon>mdi-television</v-icon>
+              </v-list-item-icon>
+              <v-list-item-content>
+                <v-list-item-title>Lower Third</v-list-item-title>
+              </v-list-item-content>
+            </v-list-item>
+            <v-list-item href="side3.html">
+              <v-list-item-icon>
+                <v-icon>mdi-television</v-icon>
+              </v-list-item-icon>
+              <v-list-item-content>
+                <v-list-item-title>Side Third</v-list-item-title>
+              </v-list-item-content>
+            </v-list-item>
+            <v-list-item href="sd.html">
+              <v-list-item-icon>
+                <v-icon>mdi-calendar-text</v-icon>
+              </v-list-item-icon>
+              <v-list-item-content>
+                <v-list-item-title>Simple Stage Display</v-list-item-title>
+              </v-list-item-content>
+            </v-list-item>
+            <v-list-item href="presenter.html">
+              <v-list-item-icon>
+                <v-icon>mdi-calendar-text</v-icon>
+              </v-list-item-icon>
+              <v-list-item-content>
+                <v-list-item-title>Presenter Notes</v-list-item-title>
+              </v-list-item-content>
+            </v-list-item>
+            <v-list-item href="presenter.html?mirror">
+              <v-list-item-icon>
+                <v-icon>mdi-calendar-text</v-icon>
+              </v-list-item-icon>
+              <v-list-item-content>
+                <v-list-item-title>Teleprompter</v-list-item-title>
+              </v-list-item-content>
+            </v-list-item>
+          </v-list>
+          <v-list-item>
+            <v-list-item-content>
+              <v-list-item-title class="title">Logs</v-list-item-title>
+            </v-list-item-content>
+          </v-list-item>
+          <v-divider></v-divider>
+          <v-list dense nav>
+            <v-list-item class="logtext">{{ logtext }}</v-list-item>
+          </v-list>
+        </v-navigation-drawer>
 
-        <!-- PRO CONNECTION STATUS -->
-        <status>
-          PP:
-          <span :class="{active: pro_status.connected, inactive: !pro_status.connected}">
-            {{ pro_status.connected ? "ACTIVE" : "INACTIVE" }}
-          </span>
-        </status>
-      </div>
+        <v-app-bar app v-bind:color="pro_status.connected ? 'green' : 'red'">
+          <v-app-bar-nav-icon></v-app-bar-nav-icon>
+          <v-app-bar-title>ProPresenter Master Control</v-app-bar-title>
+        </v-app-bar>
 
-      <div id="titlebar" :class="{active: pro_status.connected, inactive: !pro_status.connected}">
-        <h1>ProPresenter Master Control</h1>
-      </div>
+        <v-main>
+          <!-- STATUS BAR ITEMS -->
+          <div id="status-bar">
+            <!-- PRO CLOCK -->
+            <clock v-if="pro_status.system_time">{{ pro_status.system_time.text }}</clock>
 
-      <!-- NAVIGATION SIDEBAR -->
-      <div id="side-menu">
-        <div class="menu-header">Pages</div>
-        <ul>
-          <li><button @click="state='home'">Home</button></li>
-          <li><button @click="state='configuration'">Configuration</button></li>
-          <li><button @click="state='triggers'">Triggers</button></li>
-        </ul>
-
-        <div class="menu-header">Links</div>
-        <ul>
-          <li><a href="lower3.html">Lower Third</a></li>
-          <li><a href="side3.html">Side Third</a></li>
-          <li><a href="sd.html">Simple Stage Display</a></li>
-          <li><a href="presenter.html">Presenter Notes</a></li>
-          <li><a href="presenter.html?mirror">TelePrompter</a></li>
-        </ul>
-      </div>
-
-      <!-- LOG SIDEBAR -->
-      <div id="rightside">
-        <div class="logtext">{{ logtext }}</div>
-      </div>
-
-      <div id="content-pane" :class="state + '_state'">
-        <!-- PRO REMOTE HOME PAGE -->
-        <div class="home" v-if="connected && state=='home'">
-          <iframe id="lower3" src="lower3.html"></iframe>
-          <button class="btn" @click="prev">prev</button>
-          <button class="btn" @click="next">next</button>
-          <div class="slide current_slide" v-if="pro_status.slides">
-            <h3>Current Slide</h3>
-            <div class="box">
-              {{ pro_status.slides.current.text }}
-              <div class="note">{{ pro_status.slides.current.notes.replace(/\n/,' &bull; ') }}</div>
-            </div>
+            <!-- PRO CONNECTION STATUS -->
+            <status>
+              PP:
+              <span :class="{active: pro_status.connected, inactive: !pro_status.connected}">
+                {{ pro_status.connected ? "ACTIVE" : "INACTIVE" }}
+              </span>
+            </status>
           </div>
-          <div class="slide next_slide" v-if="pro_status.slides">
-            <h3>Next Slide</h3>
-            <div class="box">
-              {{ pro_status.slides.next.text }}
-              <div class="note">{{ pro_status.slides.next.notes.replace(/\n/,' &bull; ') }}</div>
-            </div>
-          </div>
 
-          <div class="timers-section" v-if="pro_status.timers">
-            <h3>Timers</h3>
-            <div class="timers">
-              <div class="timer" v-for="timer in pro_status.timers">
-                <span class="small">{{ timer.uid }}</span>
-                <br />
-                {{ timer.text }} ({{ timer.seconds }}s)
+          <div id="content-pane" :class="state + '_state'">
+            <!-- PRO REMOTE HOME PAGE -->
+            <div class="home" v-if="connected && state=='home'">
+              <iframe id="lower3" src="lower3.html"></iframe>
+              <button class="btn" @click="prev">prev</button>
+              <button class="btn" @click="next">next</button>
+              <div class="slide current_slide" v-if="pro_status.slides">
+                <h3>Current Slide</h3>
+                <div class="box">
+                  {{ pro_status.slides.current.text }}
+                  <div class="note">
+                    {{ pro_status.slides.current.notes.replace(/\n/,' &bull; ') }}
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
+              <div class="slide next_slide" v-if="pro_status.slides">
+                <h3>Next Slide</h3>
+                <div class="box">
+                  {{ pro_status.slides.next.text }}
+                  <div class="note">
+                    {{ pro_status.slides.next.notes.replace(/\n/,' &bull; ') }}
+                  </div>
+                </div>
+              </div>
 
-          <div class="presentation-section" v-if="pro_status.currentPresentation">
-            <h3>Current Presentation</h3>
-            <div class="presentation">
-              <div
-                class="slide-group-color"
-                :key="index"
-                :style="{backgroundColor: slide.groupColorStyle}"
-                v-for="slide, index in flatSlidesWithGroup"
-                @click="trigger_slide(index)"
-              >
-                <div
-                  class="slide"
-                  :class="{current: slide.current}"
-                  :style="{backgroundColor: slide.slideColorStyle}"
-                >
-                  <img
-                    class="slide-image"
-                    v-bind:src="`data:image/jpeg;base64,${slide.slideImage}`"
-                  />
+              <div class="timers-section" v-if="pro_status.timers">
+                <h3>Timers</h3>
+                <div class="timers">
+                  <div class="timer" v-for="timer in pro_status.timers">
+                    <span class="small">{{ timer.uid }}</span>
+                    <br />
+                    {{ timer.text }} ({{ timer.seconds }}s)
+                  </div>
+                </div>
+              </div>
+
+              <div class="presentation-section" v-if="pro_status.currentPresentation">
+                <h3>Current Presentation</h3>
+                <div class="presentation">
+                  <div
+                    class="slide-group-color"
+                    :key="index"
+                    :style="{backgroundColor: slide.groupColorStyle}"
+                    v-for="slide, index in flatSlidesWithGroup"
+                    @click="trigger_slide(index)"
+                  >
+                    <div
+                      class="slide"
+                      :class="{current: slide.current}"
+                      :style="{backgroundColor: slide.slideColorStyle}"
+                    >
+                      <img
+                        class="slide-image"
+                        v-bind:src="`data:image/jpeg;base64,${slide.slideImage}`"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </div>
 
-        <!-- CONFIGURATION PAGE -->
-        <div v-if="state=='configuration'" class="configuration">
-          <h3>Controllers Configuration</h3>
-          <div v-for="controller in controllers">
-            <div v-if="! isEmpty(controller.config)">
-              <h4>{{controller.niceName}}</h4>
+            <!-- CONFIGURATION PAGE -->
+            <div v-if="state=='configuration'" class="configuration">
+              <h3>Controllers Configuration</h3>
+              <div v-for="controller in controllers">
+                <div v-if="! isEmpty(controller.config)">
+                  <h4>{{controller.niceName}}</h4>
+                  <ul>
+                    <li v-for="value, key in controller.config" v-if="key != 'triggers'">
+                      <label class="text">{{key}}</label>
+                      <input
+                        @change="update_controller_config(controller)"
+                        v-model="controller.config[key]"
+                      />
+                    </li>
+                  </ul>
+                  <button class="btn" @click="request_reconnect(controller)">UPDATE</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- TRIGGERS PAGE -->
+            <div v-if="state=='triggers'" class="triggers">
+              <h3>Triggers</h3>
               <ul>
-                <li v-for="value, key in controller.config" v-if="key != 'triggers'">
-                  <label class="text">{{key}}</label>
-                  <input
-                    @change="update_controller_config(controller)"
-                    v-model="controller.config[key]"
-                  />
+                <li>
+                  <label>
+                    <input
+                      type="checkbox"
+                      v-model="allow_triggers"
+                      @change="update_allow_triggers"
+                    />
+                    Enable / Disable All Triggers ({{ triggerstatus }})
+                  </label>
                 </li>
               </ul>
-              <button class="btn" @click="request_reconnect(controller)">UPDATE</button>
+              <hr />
+              <ul v-for="controller in controllers">
+                <li class="trigger-box bulk">
+                  <label>
+                    <input
+                      :disabled="!allow_triggers"
+                      type="checkbox"
+                      @change="update_controller(controller)"
+                      v-model="controller.enabled"
+                    />
+                    <div class="trigger-meta">
+                      <div
+                        class="trigger-title"
+                        style="display: inline-block; vertical-align: middle"
+                      >
+                        <h4>
+                          {{ controller.niceName }}
+                          <span v-if="controller.requiresInstance"
+                            >({{ controller.instanceName }})</span
+                          >
+                          - {{controller.enabled ? 'Enabled' : 'Disabled'}}
+                        </h4>
+                      </div>
+                    </div>
+                    <button
+                      :disabled="!controller.enabled"
+                      @click="toggleExpand(controller)"
+                      class="expander"
+                    >
+                      {{isExpanded(controller) ? '&#9650;' : '&#9660;'}}
+                    </button>
+                  </label>
+                </li>
+                <li
+                  v-if="controller.enabled && isExpanded(controller)"
+                  v-for="trigger in controller.triggers"
+                  class="trigger-box"
+                >
+                  <label>
+                    <input
+                      :disabled="!controller.enabled || !allow_triggers"
+                      type="checkbox"
+                      @change="update_trigger(trigger)"
+                      v-model="trigger.enabled"
+                    />
+                    <div class="trigger-meta">
+                      <div
+                        class="trigger-title"
+                        style="display: inline-block; vertical-align: middle"
+                      >
+                        <pre>[{{trigger.label}}]</pre>
+                        <div class="trigger-description">{{trigger.description}}</div>
+                        <div class="trigger-description">{{trigger.extrahelp}}</div>
+                        <div v-if="trigger.args.length > 0">
+                          <h5>Arguments:</h5>
+                          <div style="margin-left: 10px">
+                            <div v-for="arg in trigger.args" class="trigger-arg">
+                              &lt;{{arg.name}}:{{arg.type}}&gt; ({{arg.description}})<br /><small
+                                >{{arg.help}}</small
+                              >
+                            </div>
+                          </div>
+                        </div>
+                        <div v-if="trigger.examples.length > 0">
+                          <h5>Examples:</h5>
+                          <div style="margin-left: 10px">
+                            <div class="trigger-example" v-for="example in trigger.examples">
+                              <pre><code>{{example}}</code></pre>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </label>
+                </li>
+              </ul>
             </div>
           </div>
-        </div>
-
-        <!-- TRIGGERS PAGE -->
-        <div v-if="state=='triggers'" class="triggers">
-          <h3>Triggers</h3>
-          <ul>
-            <li>
-              <label>
-                <input type="checkbox" v-model="allow_triggers" @change="update_allow_triggers" />
-                Enable / Disable All Triggers ({{ triggerstatus }})
-              </label>
-            </li>
-          </ul>
-          <hr />
-          <ul v-for="controller in controllers">
-            <li class="trigger-box bulk">
-              <label>
-                <input
-                  :disabled="!allow_triggers"
-                  type="checkbox"
-                  @change="update_controller(controller)"
-                  v-model="controller.enabled"
-                />
-                <div class="trigger-meta">
-                  <div class="trigger-title" style="display: inline-block; vertical-align: middle">
-                    <h4>
-                      {{ controller.niceName }}
-                      <span v-if="controller.requiresInstance"
-                        >({{ controller.instanceName }})</span
-                      >
-                      - {{controller.enabled ? 'Enabled' : 'Disabled'}}
-                    </h4>
-                  </div>
-                </div>
-                <button
-                  :disabled="!controller.enabled"
-                  @click="toggleExpand(controller)"
-                  class="expander"
-                >
-                  {{isExpanded(controller) ? '&#9650;' : '&#9660;'}}
-                </button>
-              </label>
-            </li>
-            <li
-              v-if="controller.enabled && isExpanded(controller)"
-              v-for="trigger in controller.triggers"
-              class="trigger-box"
-            >
-              <label>
-                <input
-                  :disabled="!controller.enabled || !allow_triggers"
-                  type="checkbox"
-                  @change="update_trigger(trigger)"
-                  v-model="trigger.enabled"
-                />
-                <div class="trigger-meta">
-                  <div class="trigger-title" style="display: inline-block; vertical-align: middle">
-                    <pre>[{{trigger.label}}]</pre>
-                    <div class="trigger-description">{{trigger.description}}</div>
-                    <div class="trigger-description">{{trigger.extrahelp}}</div>
-                    <div v-if="trigger.args.length > 0">
-                      <h5>Arguments:</h5>
-                      <div style="margin-left: 10px">
-                        <div v-for="arg in trigger.args" class="trigger-arg">
-                          &lt;{{arg.name}}:{{arg.type}}&gt; ({{arg.description}})<br /><small
-                            >{{arg.help}}</small
-                          >
-                        </div>
-                      </div>
-                    </div>
-                    <div v-if="trigger.examples.length > 0">
-                      <h5>Examples:</h5>
-                      <div style="margin-left: 10px">
-                        <div class="trigger-example" v-for="example in trigger.examples">
-                          <pre><code>{{example}}</code></pre>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </label>
-            </li>
-          </ul>
-        </div>
-      </div>
+        </v-main>
+      </v-app>
     </div>
 
     <script type="text/javascript" src="lib/vue.js"></script>
+    <script type="text/javascript" src="lib/vuetify.js"></script>
 
     <!-- main code goes here -->
     <script type="text/javascript">
@@ -584,6 +621,9 @@
       let reconnectTimer = 0;
       let app = new Vue({
         el: '#app',
+        vuetify: new Vuetify({
+          theme: { dark: true },
+        }),
         data: {
           first_load: true,
           state: 'loading',
