@@ -1,5 +1,5 @@
 node_modules/*
-ui/lib/vue.js
+ui/lib/*
 # vscode
 .vscode/*
 !.vscode/extensions.json
