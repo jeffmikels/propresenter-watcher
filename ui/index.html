@@ -100,13 +100,6 @@
         border-color: blue !important;
       }
 
-      status {
-        position: absolute;
-        bottom: 3px;
-        left: 3px;
-        color: var(--bright);
-      }
-
       .disconnected status {
         color: red !important;
       }
@@ -117,13 +110,6 @@
 
       status .inactive {
         color: red;
-      }
-
-      clock {
-        position: absolute;
-        bottom: 3px;
-        right: 3px;
-        text-align: right;
       }
 
       .vmix.sending {
@@ -394,6 +380,19 @@
           <v-app-bar-title>ProPresenter Master Control</v-app-bar-title>
         </v-app-bar>
 
+        <v-footer app>
+          <!-- PRO CONNECTION STATUS -->
+          <status>
+            PP:
+            <span :class="{active: pro_status.connected, inactive: !pro_status.connected}">
+              {{ pro_status.connected ? "ACTIVE" : "INACTIVE" }}
+            </span>
+          </status>
+          <v-spacer></v-spacer>
+          <!-- PRO CLOCK -->
+          <clock v-if="pro_status.system_time">{{ pro_status.system_time.text }}</clock>
+        </v-footer>
+
         <v-main>
           <div class="home" v-if="connected && state=='home'">
             <v-container>
@@ -508,20 +507,8 @@
               </div>
             </v-container>
           </div>
-
           <!-- STATUS BAR ITEMS -->
-          <div id="status-bar">
-            <!-- PRO CLOCK -->
-            <clock v-if="pro_status.system_time">{{ pro_status.system_time.text }}</clock>
-
-            <!-- PRO CONNECTION STATUS -->
-            <status>
-              PP:
-              <span :class="{active: pro_status.connected, inactive: !pro_status.connected}">
-                {{ pro_status.connected ? "ACTIVE" : "INACTIVE" }}
-              </span>
-            </status>
-          </div>
+          <div id="status-bar"></div>
 
           <div id="content-pane" :class="state + '_state'">
             <!-- PRO REMOTE HOME PAGE -->
