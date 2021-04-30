@@ -600,6 +600,7 @@ class ProRemoteClient extends EventEmitter {
       case 'clockNameChanged':
         let index = data.clockIndex;
         if ( this.status.clocks[ index ] ) this.status.clocks[ index ].clockName = data.clockName;
+        this.emit( 'clocksupdate' );
         break;
       case 'clockCurrentTimes':
         let didchange = false;
