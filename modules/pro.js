@@ -77,7 +77,9 @@ class ProController extends Module {
       'msgupdate',
       'sysupdate',
       'slideupdate',
-      'timerupdate', // for every individual timer update
+      // timer update is not used anymore
+      // because the clocksupdate is more reliable
+      // 'timerupdate',
       'clocksupdate',
       'remoteupdate',
       'remotedata',
@@ -98,7 +100,7 @@ class ProController extends Module {
 
     this.remote.on( 'update', () => this.emit( 'remoteupdate', this.fullStatus() ) );
     this.remote.on( 'clocksupdate', () => {
-      this.mergeClocks();
+      // this.mergeClocks(); // not reliable since the 
       this.emit( 'clocksupdate', this.remote.status.clocks )
     } );
     this.remote.on( 'data', ( data ) => {
@@ -487,8 +489,10 @@ class ProRemoteClient extends EventEmitter {
     }
 
     this.ws.on( 'message', ( data ) => {
-      this.handleData( JSON.parse( data ) );
-      this.notify();
+      data = JSON.parse( data );
+      this.parent.log( data );
+      this.handleData( data );
+      // this.notify();
     } );
     this.ws.on( 'open', () => {
       this.authenticate();
@@ -560,8 +564,6 @@ class ProRemoteClient extends EventEmitter {
   }
 
   handleData( data ) {
-    this.parent.log( data );
-
     // process data for this class instance
     switch ( data.action ) {
       case 'authenticate':
@@ -589,18 +591,35 @@ class ProRemoteClient extends EventEmitter {
         }
         break;
       case 'clockRequest':
+      case 'clockDeleteAdd':
         this.status.clocks = data.clockInfo;
+        this.addClockTypeText();
+        this.fixClockTimeData();
         this.emit( 'clocksupdate' );
         break;
+      case 'clockNameChanged':
+        let index = data.clockIndex;
+        if ( this.status.clocks[ index ] ) this.status.clocks[ index ].clockName = data.clockName;
+        break;
       case 'clockCurrentTimes':
+        let didchange = false;
         if ( this.status.clocks.length > 0 ) {
           for ( let i = 0; i < data.clockTimes.length; i++ ) {
             if ( this.status.clocks[ i ] ) {
-              this.status.clocks[ i ].clockTime = data.clockTimes[ i ];
+              if ( this.status.clocks[ i ].clockTime != data.clockTimes[ i ] ) {
+                this.status.clocks[ i ].clockTime = data.clockTimes[ i ];
+                this.status.clocks[ i ].updated = true;
+                didchange = true;
+              } else {
+                this.status.clocks[ i ].updated = false;
+              }
             }
           }
         }
-        this.emit( 'clocksupdate' );
+        if ( didchange ) {
+          this.fixClockTimeData();
+          this.emit( 'clocksupdate' );
+        }
         break;
       case 'clockStartStop':
         let i = data.clockIndex;
@@ -623,6 +642,21 @@ class ProRemoteClient extends EventEmitter {
     if ( typeof this.callbacks[ data.action ] == 'function' ) {
       this.callbacks[ data.action ]( data );
       delete this.callbacks[ data.action ];
+    }
+  }
+
+  addClockTypeText() {
+    let types = [ 'Countdown', 'Countdown To Time', 'Elapsed Time' ];
+    for ( let c of this.status.clocks ) {
+      c.clockTypeText = types[ c.clockType ];
+    }
+  }
+  fixClockTimeData() {
+    for ( let c of this.status.clocks ) {
+      c.text = c.clockTime;
+      c.seconds = hms2secs( c.clockTime );
+      c.over = c.seconds < 0;
+      c.running = c.clockState;
     }
   }
 

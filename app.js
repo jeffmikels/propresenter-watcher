@@ -456,24 +456,24 @@ function setupProListeners() {
 	} );
 
 	// will fire for every individual timer update
-	pro.on( 'timerupdate', ( timer ) => {
-		Log( timer );
-		// fire a different trigger for each timer if that trigger exists
-		if ( allow_triggers ) fireTriggers( `timer-${timer.uid}`, [], pro );
-		broadcast( 'timerupdate', timer );
-	} );
+	// pro.on( 'timerupdate', ( timer ) => {
+	// 	// Log( timer );
+	// 	// fire a different trigger for each timer if that trigger exists
+	// 	if ( allow_triggers ) fireTriggers( `timer-${timer.uid}`, [], pro );
+	// 	broadcast( 'timerupdate', timer );
+	// } );
 
 	// will fire max of once per second
-	pro.on( 'clocksupdate', ( timers ) => {
-		Log( timers );
-		for ( let t of timers ) {
-			Log( t );
-			// fire a different trigger for each timer if that trigger exists
-			if ( allow_triggers ) fireTriggers( `timer-${t.uid}`, [], pro );
+	pro.on( 'clocksupdate', ( clocks ) => {
+		// Log( timers );
+		for ( let clock of clocks ) {
+			if ( clock.updated && allow_triggers ) {
+				fireTriggers( `CLOCKUPDATE: ${clock.clockName}`, [], pro );
+			}
 		}
 		// fire a global trigger for all timers
 		if ( allow_triggers ) fireTriggers( '~timersupdate~', [], pro );
-		broadcast( 'timersupdate', timers );
+		broadcast( 'clocksupdate', clocks );
 	} );
 
 
@@ -520,6 +520,7 @@ function setupProListeners() {
 	pro.on( 'msgupdate', ( data ) => broadcast( 'msgupdate', data ) );
 	pro.on( 'remotedata', ( data ) => broadcast( 'remotedata', data ) );
 	pro.on( 'remoteupdate', ( data ) => broadcast( 'remoteupdate', data ) );
+	pro.on( 'log', console.log ); // skip the weblog
 }
 
 function getStatus() {

@@ -126,7 +126,17 @@
       }
       .timer {
         margin-bottom: 10px;
+        /* border: 3px solid black; */
+        transition: border 0.4s;
       }
+      .timer.running {
+        /* border-color: orange; */
+        background-color: rgba(250, 156, 32, 0.6);
+      }
+      .timer.over {
+        background-color: rgba(255, 0, 0, 0.6);
+      }
+
       span.small {
         font-size: 9px;
       }
@@ -459,18 +469,21 @@
                 </div>
               </v-card>
             </v-container>
-            <v-container class="timers-section" v-if="pro_status.timers">
-              <h1>Timers</h1>
+            <v-container class="timers-section" v-if="pro_status.clocks">
+              <h1>Clocks</h1>
               <div class="timers d-flex justify-space-around">
-                <v-card class="timer" v-for="timer in pro_status.timers">
-                  <v-card-text class="text-center">
-                    <span class="">{{ timer.clockName }}</span>
+                <v-card
+                  class="timer"
+                  :class="{over: clock.over, running: clock.running}"
+                  v-for="clock in pro_status.clocks"
+                >
+                  <v-card-text class="timer-text text-center">
+                    <span class="">{{ clock.clockName }}</span>
                     <br />
-                    <span class="small">{{ timer.uid }}</span>
+                    <span class="text-h5">{{ clock.clockTime }}</span>
                     <br />
-                    <span class="text-h5"
-                      >{{ timer.text }} (<small>{{ timer.seconds }}s</small>)</span
-                    >
+                    <span class="small">{{ clock.clockTypeText }}</span>
+                    <!-- <span class="small">({{ clock.seconds }}s)</span> -->
                   </v-card-text>
                 </v-card>
               </div>
@@ -668,6 +681,7 @@
           slides: {},
           system: {},
           timers: {},
+          clocks: {},
           pro_status: {}, // status of the propresenter master
           currentSlideIndex: 0,
           presentationPath: '',
@@ -828,6 +842,9 @@
                   break;
                 case 'timersupdate':
                   this.timers = data;
+                  break;
+                case 'clockssupdate':
+                  this.clocks = data;
                   break;
                 case 'remotedata':
                   switch (data.action) {
