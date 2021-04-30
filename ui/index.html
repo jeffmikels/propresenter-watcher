@@ -22,6 +22,10 @@
         background: var(--bright);
       }
 
+      .v-card {
+        margin-bottom: 16px;
+      }
+
       input,
       button,
       textarea {
@@ -66,6 +70,10 @@
         background: none;
         padding: 6px;
         color: white;
+      }
+
+      .slide-image-left {
+        margin-left: 12px;
       }
 
       .box {
@@ -191,38 +199,6 @@
         font-weight: 100;
       }
 
-      #side-menu .menu-header:first-child {
-        margin-top: 0;
-      }
-      #side-menu .menu-header {
-        padding: 10px 4px 4px;
-        margin: 10px 0 10px;
-        background: var(--medium);
-        font-size: 20pt;
-        font-weight: 100;
-      }
-
-      #side-menu button,
-      #side-menu a {
-        text-decoration: none;
-        font-size: 13pt;
-        background: none;
-        border: none;
-        cursor: pointer;
-        color: white;
-        text-transform: uppercase;
-        padding: 4px 0px 4px 10px;
-        margin: 0;
-        display: block;
-        width: 100%;
-        text-align: left;
-      }
-
-      #side-menu button:hover,
-      #side-menu a:hover {
-        background-color: var(--medium);
-      }
-
       #status-bar {
         font-weight: 700;
       }
@@ -292,25 +268,25 @@
         border: 1px solid var(--bright);
       }
 
-      #content-pane .presentation {
+      .presentation-section .presentation {
         display: flex;
         flex-flow: row wrap;
         justify-content: space-evenly;
       }
-      #content-pane .presentation .slide-group-color {
+      .presentation-section .presentation .slide-group-color {
         margin-bottom: 10px;
         border-radius: 6px;
         padding: 2px;
       }
 
-      #content-pane .presentation .slide {
+      .presentation-section .presentation .slide {
         width: 212px;
         padding: 6px;
         border: 0;
         background: var(--medium);
         border-radius: 6px;
       }
-      #content-pane .presentation .slide.current {
+      .presentation-section .presentation .slide.current {
         background: orange !important;
         box-shadow: 0px 0px 4px orange;
       }
@@ -419,6 +395,120 @@
         </v-app-bar>
 
         <v-main>
+          <div class="home" v-if="connected && state=='home'">
+            <v-container>
+              <v-card v-if="pro_status.currentPresentation">
+                <div class="d-flex flex-no-wrap">
+                  <img
+                    class="slide-image-left align-self-center"
+                    v-bind:src="`data:image/jpeg;base64,${flatSlidesWithGroup[pro_status.currentSlideIndex].slideImage}`"
+                  />
+                  <div>
+                    <v-card-title>
+                      <v-icon class="me-2">mdi-star-circle</v-icon> Current Slide
+                      <v-chip
+                        small
+                        class="mx-2"
+                        :color="flatSlidesWithGroup[pro_status.currentSlideIndex].groupColorStyle"
+                        v-if="flatSlidesWithGroup[pro_status.currentSlideIndex].groupName !== 'Group' || flatSlidesWithGroup[pro_status.currentSlideIndex].slideLabel"
+                      >
+                        <b>[{{flatSlidesWithGroup[pro_status.currentSlideIndex].groupName}}]</b>
+                        <span v-if="flatSlidesWithGroup[pro_status.currentSlideIndex].slideLabel">
+                          &nbsp; {{flatSlidesWithGroup[pro_status.currentSlideIndex].slideLabel}}
+                        </span>
+                      </v-chip>
+                    </v-card-title>
+                    <v-card-text>
+                      {{ pro_status.slides.current.text }}
+                      <div class="note" style="margin-top: 8px">
+                        {{ pro_status.slides.current.notes.replace(/\n/,' &bull; ') }}
+                      </div>
+                    </v-card-text>
+                  </div>
+                </div>
+              </v-card>
+
+              <v-card v-if="pro_status.currentPresentation">
+                <div class="d-flex flex-no-wrap">
+                  <img
+                    class="slide-image-left align-self-center"
+                    v-if="flatSlidesWithGroup[pro_status.currentSlideIndex+1]"
+                    v-bind:src="`data:image/jpeg;base64,${flatSlidesWithGroup[pro_status.currentSlideIndex+1].slideImage}`"
+                  />
+                  <div>
+                    <v-card-title>
+                      <v-icon class="me-2">mdi-chevron-right-circle</v-icon> Next Slide
+                      <v-chip
+                        small
+                        class="mx-2"
+                        :color="flatSlidesWithGroup[pro_status.currentSlideIndex+1].groupColorStyle"
+                        v-if="flatSlidesWithGroup[pro_status.currentSlideIndex+1].groupName !== 'Group' || flatSlidesWithGroup[pro_status.currentSlideIndex+1].slideLabel"
+                      >
+                        <b>[{{flatSlidesWithGroup[pro_status.currentSlideIndex+1].groupName}}]</b>
+                        <span v-if="flatSlidesWithGroup[pro_status.currentSlideIndex+1].slideLabel">
+                          &nbsp; {{flatSlidesWithGroup[pro_status.currentSlideIndex+1].slideLabel}}
+                        </span>
+                      </v-chip>
+                    </v-card-title>
+                    <v-card-text>
+                      {{ pro_status.slides.next.text }}
+                      <div class="note">
+                        {{ pro_status.slides.next.notes.replace(/\n/,' &bull; ') }}
+                      </div>
+                    </v-card-text>
+                  </div>
+                </div>
+              </v-card>
+            </v-container>
+            <v-container class="timers-section" v-if="pro_status.timers">
+              <h1>Timers</h1>
+              <div class="timers d-flex justify-space-around">
+                <v-card class="timer" v-for="timer in pro_status.timers">
+                  <v-card-text class="text-center">
+                    <span class="small">{{ timer.uid }}</span>
+                    <br />
+                    <span class="text-h5">{{ timer.text }} ({{ timer.seconds }}s)</span>
+                  </v-card-text>
+                </v-card>
+              </div>
+            </v-container>
+            <v-container class="presentation-section my-4" v-if="pro_status.currentPresentation">
+              <div class="d-flex justify-space-between">
+                <h1>Current Presentation</h1>
+                <div class="mx-4">
+                  <v-btn class="mx-2" @click="prev">
+                    <v-icon>mdi-chevron-left</v-icon>
+                    prev slide
+                  </v-btn>
+                  <v-btn class="mx-2" @click="next">
+                    next slide
+                    <v-icon right>mdi-chevron-right</v-icon>
+                  </v-btn>
+                </div>
+              </div>
+              <div class="presentation">
+                <div
+                  class="slide-group-color"
+                  :key="index"
+                  :style="{backgroundColor: slide.groupColorStyle}"
+                  v-for="slide, index in flatSlidesWithGroup"
+                  @click="trigger_slide(index)"
+                >
+                  <div
+                    class="slide"
+                    :class="{current: slide.current}"
+                    :style="{backgroundColor: slide.slideColorStyle}"
+                  >
+                    <img
+                      class="slide-image"
+                      v-bind:src="`data:image/jpeg;base64,${slide.slideImage}`"
+                    />
+                  </div>
+                </div>
+              </div>
+            </v-container>
+          </div>
+
           <!-- STATUS BAR ITEMS -->
           <div id="status-bar">
             <!-- PRO CLOCK -->
@@ -437,61 +527,6 @@
             <!-- PRO REMOTE HOME PAGE -->
             <div class="home" v-if="connected && state=='home'">
               <iframe id="lower3" src="lower3.html"></iframe>
-              <button class="btn" @click="prev">prev</button>
-              <button class="btn" @click="next">next</button>
-              <div class="slide current_slide" v-if="pro_status.slides">
-                <h3>Current Slide</h3>
-                <div class="box">
-                  {{ pro_status.slides.current.text }}
-                  <div class="note">
-                    {{ pro_status.slides.current.notes.replace(/\n/,' &bull; ') }}
-                  </div>
-                </div>
-              </div>
-              <div class="slide next_slide" v-if="pro_status.slides">
-                <h3>Next Slide</h3>
-                <div class="box">
-                  {{ pro_status.slides.next.text }}
-                  <div class="note">
-                    {{ pro_status.slides.next.notes.replace(/\n/,' &bull; ') }}
-                  </div>
-                </div>
-              </div>
-
-              <div class="timers-section" v-if="pro_status.timers">
-                <h3>Timers</h3>
-                <div class="timers">
-                  <div class="timer" v-for="timer in pro_status.timers">
-                    <span class="small">{{ timer.uid }}</span>
-                    <br />
-                    {{ timer.text }} ({{ timer.seconds }}s)
-                  </div>
-                </div>
-              </div>
-
-              <div class="presentation-section" v-if="pro_status.currentPresentation">
-                <h3>Current Presentation</h3>
-                <div class="presentation">
-                  <div
-                    class="slide-group-color"
-                    :key="index"
-                    :style="{backgroundColor: slide.groupColorStyle}"
-                    v-for="slide, index in flatSlidesWithGroup"
-                    @click="trigger_slide(index)"
-                  >
-                    <div
-                      class="slide"
-                      :class="{current: slide.current}"
-                      :style="{backgroundColor: slide.slideColorStyle}"
-                    >
-                      <img
-                        class="slide-image"
-                        v-bind:src="`data:image/jpeg;base64,${slide.slideImage}`"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
             </div>
 
             <!-- CONFIGURATION PAGE -->
