@@ -464,9 +464,13 @@
               <div class="timers d-flex justify-space-around">
                 <v-card class="timer" v-for="timer in pro_status.timers">
                   <v-card-text class="text-center">
+                    <span class="">{{ timer.clockName }}</span>
+                    <br />
                     <span class="small">{{ timer.uid }}</span>
                     <br />
-                    <span class="text-h5">{{ timer.text }} ({{ timer.seconds }}s)</span>
+                    <span class="text-h5"
+                      >{{ timer.text }} (<small>{{ timer.seconds }}s</small>)</span
+                    >
                   </v-card-text>
                 </v-card>
               </div>

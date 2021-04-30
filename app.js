@@ -455,15 +455,27 @@ function setupProListeners() {
 		broadcast( 'sysupdate', e );
 	} );
 
-	pro.on( 'timersupdate', ( e ) => {
-		Log( e );
-		if ( e.uid == '47E8B48C-0D61-4EFC-9517-BF9FB894C8E2' ) {
-			Log( `COUNTDOWN TIMER TRIGGERED:` );
-			Log( e );
-		}
-		if ( allow_triggers ) fireTriggers( '~timersupdate~', [], pro );
-		broadcast( 'timersupdate', e );
+	// will fire for every individual timer update
+	pro.on( 'timerupdate', ( timer ) => {
+		Log( timer );
+		// fire a different trigger for each timer if that trigger exists
+		if ( allow_triggers ) fireTriggers( `timer-${timer.uid}`, [], pro );
+		broadcast( 'timerupdate', timer );
 	} );
+
+	// will fire max of once per second
+	pro.on( 'clocksupdate', ( timers ) => {
+		Log( timers );
+		for ( let t of timers ) {
+			Log( t );
+			// fire a different trigger for each timer if that trigger exists
+			if ( allow_triggers ) fireTriggers( `timer-${t.uid}`, [], pro );
+		}
+		// fire a global trigger for all timers
+		if ( allow_triggers ) fireTriggers( '~timersupdate~', [], pro );
+		broadcast( 'timersupdate', timers );
+	} );
+
 
 	pro.on( 'slideupdate', ( data ) => {
 		Log( data );

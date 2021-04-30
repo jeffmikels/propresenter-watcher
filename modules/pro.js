@@ -77,7 +77,8 @@ class ProController extends Module {
       'msgupdate',
       'sysupdate',
       'slideupdate',
-      'timersupdate',
+      'timerupdate', // for every individual timer update
+      'clocksupdate',
       'remoteupdate',
       'remotedata',
     ];
@@ -87,9 +88,19 @@ class ProController extends Module {
     this.sd.on( 'msgupdate', ( data ) => this.emit( 'msgupdate', data ) );
     this.sd.on( 'sysupdate', ( data ) => this.emit( 'sysupdate', data ) );
     this.sd.on( 'slideupdate', ( data ) => this.emit( 'slideupdate', data ) );
-    this.sd.on( 'timersupdate', ( data ) => this.emit( 'timersupdate', data ) );
+
+    // no longer used... we now rely on the .remote.clocks for timer updates
+    // sd sends update on every individual timer
+    // this.sd.on( 'timerupdate', ( data ) => {
+    //   this.mergeClocks();
+    //   this.emit( 'timerupdate', data );
+    // } );
 
     this.remote.on( 'update', () => this.emit( 'remoteupdate', this.fullStatus() ) );
+    this.remote.on( 'clocksupdate', () => {
+      this.mergeClocks();
+      this.emit( 'clocksupdate', this.remote.status.clocks )
+    } );
     this.remote.on( 'data', ( data ) => {
       this.emit( 'remotedata', data );
       if ( this.master ) {
@@ -132,6 +143,30 @@ class ProController extends Module {
       ...this.status(),
       ...this.remote.status,
     };
+  }
+
+  // merges the sd "timers" with the remote "clocks"
+  mergeClocks() {
+    // sd timers have uid, text, and seconds as int
+    // remote clocks have 
+    // {
+    //   "clockType": 1,
+    //   "clockState": false,
+    //   "clockName": "Countdown 2",
+    //   "clockIsPM": 1,
+    //   "clockDuration": "7:00:00",
+    //   "clockOverrun": false,
+    //   "clockEndTime": "--:--:--",
+    //   "clockTime": "--:--:--"
+    // }
+    for ( let i = 0; i < this.sd.timers.length; i++ ) {
+      let timer = this.sd.timers[ i ];
+      if ( this.remote.status.clocks[ i ] ) {
+        let clock = this.remote.status.clocks[ i ];
+        this.remote.status.clocks[ i ] = this.sd.timers[ i ] = { ...timer, ...clock };
+      }
+    }
+
   }
 
   _registerDefaultTriggers() {
@@ -196,7 +231,7 @@ class ProSDClient extends EventEmitter {
     // tracking propresenter state
     this.stage_message = '';
     this.system_time = { text: '', seconds: 0 };
-    this.timers = {};
+    this.timers = []; // need to preserve order to sync with remote protocol
     this.slides = {
       current: new ProSlide(),
       next: new ProSlide(),
@@ -206,7 +241,7 @@ class ProSDClient extends EventEmitter {
     this.onmsgupdate = ( data ) => this.emit( 'msgupdate', data, this );
     this.onsysupdate = ( data ) => this.emit( 'sysupdate', data, this );
     this.onslideupdate = ( data ) => this.emit( 'slideupdate', data, this );
-    this.ontimersupdate = ( data ) => this.emit( 'timersupdate', data, this );
+    this.ontimerupdate = ( data ) => this.emit( 'timerupdate', data, this );
 
     this.connect();
   }
@@ -320,13 +355,25 @@ class ProSDClient extends EventEmitter {
         }
         break;
       case 'tmr':
-        this.timers[ data.uid ] = {
+        let exists = false;
+        let t = {
           uid: data.uid,
           text: data.txt,
           seconds: hms2secs( data.txt ),
         };
-        newdata = { type: 'timer', data: this.timers[ data.uid ] };
-        if ( this.ontimersupdate ) this.ontimersupdate( this.timers[ data.uid ] );
+        for ( let timer of this.timers ) {
+          if ( timer.uid == t.uid ) {
+            timer.text = t.text;
+            timer.seconds = t.seconds;
+            exists = true;
+            break;
+          }
+        }
+        if ( !exists ) {
+          this.timers.push( t );
+        }
+        newdata = { type: 'timer', data: t };
+        if ( this.ontimerupdate ) this.ontimerupdate( t );
         break;
       case 'sys':
         // { "acn": "sys", "txt": " 11:17 AM" }
@@ -395,6 +442,7 @@ class ProRemoteClient extends EventEmitter {
 
     // handle pro6 status
     this.status = {
+      clocks: [],
       currentPresentation: null,
       currentSlideIndex: 0,
       library: [],
@@ -502,10 +550,13 @@ class ProRemoteClient extends EventEmitter {
   }
 
   loadStatus() {
+    this.getClocks();
     this.getLibrary();
     this.getPlaylists();
     this.getPresentation();
     this.getCurrentSlideIndex();
+    // if the stage display client is connected
+    this.subscribeClocks();
   }
 
   handleData( data ) {
@@ -536,6 +587,33 @@ class ProRemoteClient extends EventEmitter {
         if ( this.status.currentPresentation != data.presentationPath ) {
           this.getPresentation( data.presentationPath );
         }
+        break;
+      case 'clockRequest':
+        this.status.clocks = data.clockInfo;
+        this.emit( 'clocksupdate' );
+        break;
+      case 'clockCurrentTimes':
+        if ( this.status.clocks.length > 0 ) {
+          for ( let i = 0; i < data.clockTimes.length; i++ ) {
+            if ( this.status.clocks[ i ] ) {
+              this.status.clocks[ i ].clockTime = data.clockTimes[ i ];
+            }
+          }
+        }
+        this.emit( 'clocksupdate' );
+        break;
+      case 'clockStartStop':
+        let i = data.clockIndex;
+        if ( this.status.clocks[ i ] ) {
+          let clock = this.status.clocks[ i ];
+          // I'm ignoring data.clockInfo because we don't know what the three items are
+          clock.clockState = data.clockState == 1; // reported as int for some reason
+          clock.clockTime = data.clockTime;
+        }
+        this.emit( 'clocksupdate' );
+        break;
+      default:
+        break;
     }
 
     // handle update stream
@@ -548,12 +626,40 @@ class ProRemoteClient extends EventEmitter {
     }
   }
 
+  action( action, callback = null ) {
+    this.send( { action }, callback );
+  }
+
+  startClock( clockIndex, callback = null ) {
+    this.send( { action: "clockStart", clockIndex }, callback );
+  }
+
+  stopClock( clockIndex, callback = null ) {
+    this.send( { action: "clockStop", clockIndex }, callback );
+  }
+
+  resetClock( clockIndex, callback = null ) {
+    this.send( { action: "clockReset", clockIndex }, callback );
+  }
+
+  subscribeClocks( callback = null ) {
+    this.action( 'clockStartSendingCurrentTime', callback );
+  }
+
+  unsubscribeClocks( callback = null ) {
+    this.action( 'clockStopSendingCurrentTime', callback );
+  }
+
+  getClocks( callback = null ) {
+    this.action( 'clockRequest', callback );
+  }
+
   getLibrary( callback = null ) {
-    this.send( { action: 'libraryRequest' }, callback );
+    this.action( 'libraryRequest', callback );
   }
 
   getPlaylists( callback = null ) {
-    this.send( { action: 'playlistRequestAll' }, callback );
+    this.action( 'playlistRequestAll', callback );
   }
 
   getPresentation( path = null, quality = 200, callback = null ) {
@@ -578,7 +684,7 @@ class ProRemoteClient extends EventEmitter {
   }
 
   getCurrentSlideIndex( callback = null ) {
-    this.send( { action: 'presentationSlideIndex' }, callback );
+    this.action( 'presentationSlideIndex', callback );
   }
 
   triggerSlide( index = 0, path = null, callback = null ) {
