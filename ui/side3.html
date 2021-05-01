@@ -168,9 +168,9 @@
             ws.bettersend('lower3');
           },
           updateFrom(data) {
-            if (data.html != '') this.html = data.html;
-            if (data.text != '') this.text = data.text;
-            if (data.caption != '') this.caption = data.caption;
+            this.html = data.html ?? '';
+            this.text = data.text ?? '';
+            this.caption = data.caption ?? '';
             if (data.image != '') this.image = data.image;
             this.show_text = data.html != '' || data.text != '';
           },
