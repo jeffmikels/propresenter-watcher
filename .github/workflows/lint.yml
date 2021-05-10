@@ -8,10 +8,12 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - name: Install Packages
-      run: sudo apt-get install libasound2-dev
-    - name: Install modules
-      run: npm install
-    - name: Run ESLint
-      run: npx eslint .
+      - uses: actions/checkout@v2
+      - name: Install Packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install libasound2-dev
+      - name: Install modules
+        run: npm install
+      - name: Run ESLint
+        run: npx eslint .
