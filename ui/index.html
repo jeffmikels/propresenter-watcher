@@ -62,16 +62,6 @@
         display: inline-block;
       }
 
-      input {
-        display: inline-block;
-        vertical-align: middle;
-        border: 1px solid #333;
-        border-radius: 2px;
-        background: none;
-        padding: 6px;
-        color: white;
-      }
-
       .slide-image-left {
         margin-left: 12px;
       }
@@ -619,6 +609,26 @@
               </v-expansion-panel>
             </v-expansion-panels>
           </div>
+          <div v-if="state=='configuration'" class="configuration">
+            <v-container>
+              <h1>Configuration</h1>
+              <v-card v-for="controller in controllers">
+                <div v-if="! isEmpty(controller.config)">
+                  <v-card-title>{{controller.niceName}}</v-card-title>
+                  <v-card-text>
+                    <div v-for="value, key in controller.config" v-if="key != 'triggers'">
+                      <v-text-field
+                        @change="update_controller_config(controller)"
+                        v-model="controller.config[key]"
+                        :label="key"
+                      ></v-text-field>
+                    </div>
+                    <v-btn @click="request_reconnect(controller)">Update</v-btn>
+                  </v-card-text>
+                </div>
+              </v-card>
+            </v-container>
+          </div>
 
           <!-- STATUS BAR ITEMS -->
           <div id="status-bar"></div>
@@ -628,28 +638,6 @@
             <div class="home" v-if="connected && state=='home'">
               <iframe id="lower3" src="lower3.html"></iframe>
             </div>
-
-            <!-- CONFIGURATION PAGE -->
-            <div v-if="state=='configuration'" class="configuration">
-              <h3>Controllers Configuration</h3>
-              <div v-for="controller in controllers">
-                <div v-if="! isEmpty(controller.config)">
-                  <h4>{{controller.niceName}}</h4>
-                  <ul>
-                    <li v-for="value, key in controller.config" v-if="key != 'triggers'">
-                      <label class="text">{{key}}</label>
-                      <input
-                        @change="update_controller_config(controller)"
-                        v-model="controller.config[key]"
-                      />
-                    </li>
-                  </ul>
-                  <button class="btn" @click="request_reconnect(controller)">UPDATE</button>
-                </div>
-              </div>
-            </div>
-
-            <!-- TRIGGERS PAGE -->
           </div>
         </v-main>
       </v-app>
