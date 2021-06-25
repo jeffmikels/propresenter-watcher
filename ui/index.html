@@ -26,14 +26,6 @@
         margin-bottom: 16px;
       }
 
-      input,
-      button,
-      textarea {
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu',
-          'Helvetica Neue', Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-          'Segoe UI Symbol';
-      }
-
       #status-bar {
         grid-row: 3;
         grid-column: 1 / 4;
@@ -48,37 +40,10 @@
         overflow: auto;
       }
 
-      h1 {
-        margin-top: 0;
-      }
-
-      li {
-        margin-bottom: 3px;
-        list-style: none;
-      }
-
-      label.text {
-        width: 300px;
-        display: inline-block;
-      }
-
       .slide-image-left {
         margin-left: 12px;
       }
 
-      .box {
-        border: 1px solid #eee;
-        border-color: white;
-        border-radius: 3px;
-        background: #222;
-        padding: 20px;
-        font-size: 1.2em;
-        font-weight: 600;
-        overflow-x: auto;
-        /* -ms-overflow-style: none; */
-        /* scrollbar-width: none; */
-      }
-      /* .box::-webkit-scrollbar {display:none;} */
       .current_slide .box {
         border: 2px solid orange;
       }
@@ -141,117 +106,12 @@
         aspect-ratio: 7.14;
       }
 
-      input[type='checkbox'] {
-        zoom: 2;
-      }
-
-      li.trigger-box {
-        border: 2px solid #333;
-        font-size: 1.1em;
-      }
-      li.trigger-box label {
-        display: flex;
-        align-items: center;
-      }
-      li.trigger-box.bulk {
-        background: #333;
-      }
-      li.trigger-box small {
-        font-size: 0.7em;
-      }
-      li.trigger-box input,
-      li.trigger-box button {
-        margin: 0 10px 0 5px;
-      }
-      .trigger-title {
-        font-size: 1.2em;
-      }
-      .trigger-description {
-        font-size: 0.8em;
-        margin-bottom: 10px;
-      }
-      .trigger-meta {
-        overflow-x: auto;
-        flex-grow: 10;
-      }
-      .trigger-meta h5 {
-        margin-bottom: 0;
-      }
-
-      h1,
-      h2,
-      h3,
-      h4 {
-        font-weight: 100;
-      }
-
       #status-bar {
         font-weight: 700;
       }
 
       #content-pane {
         padding: 10px;
-      }
-      #content-pane h3 {
-        font-size: 36px;
-      }
-      #content-pane .btn {
-        background: var(--dark);
-        border: 1px solid var(--bright);
-        padding: 4px 10px;
-        color: var(--bright);
-        font-size: 24px;
-        transition: all 0.5s;
-        text-transform: uppercase;
-      }
-      #content-pane .btn:hover {
-        background: var(--bright);
-        color: var(--dark);
-      }
-
-      #content-pane .configuration h4 {
-        margin-top: 30px;
-        font-size: 26px;
-      }
-      #content-pane .configuration li {
-        display: flex;
-        align-items: center;
-      }
-      #content-pane .configuration li label.text {
-        width: 200px;
-        text-align: right;
-        padding-right: 10px;
-        font-weight: 900;
-      }
-      #content-pane .configuration li input {
-        flex-grow: 10;
-        font-size: 24px;
-      }
-
-      #content-pane .triggers .expander {
-        padding: 10px 10px;
-        font-size: 20px;
-        background: none;
-        border: none;
-        color: var(--bright);
-      }
-      #content-pane .triggers .expander:disabled {
-        color: var(--dark);
-      }
-
-      #content-pane .home .slide .note {
-        border-top: 1px dotted var(--light);
-        margin-top: 12px;
-      }
-      #content-pane .home .timers-section .timers {
-        display: flex;
-        justify-content: space-evenly;
-      }
-      #content-pane .home .timers-section .timers .timer {
-        text-align: center;
-        background: var(--dark);
-        padding: 4px 14px 10px;
-        border: 1px solid var(--bright);
       }
 
       .presentation-section .presentation {
