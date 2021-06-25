@@ -524,6 +524,102 @@
               </div>
             </v-container>
           </div>
+
+          <div v-if="state=='triggers'" class="triggers">
+            <v-container>
+              <h1>Triggers</h1>
+              <v-switch
+                v-model="allow_triggers"
+                :label="`Enable / Disable All Triggers (${triggerstatus})`"
+              >
+              </v-switch>
+            </v-container>
+            <hr />
+            <v-expansion-panels>
+              <v-expansion-panel v-for="controller in controllers">
+                <v-expansion-panel-header>
+                  <v-switch
+                    v-model="controller.enabled"
+                    :label="`Enable / Disable All Triggers (${triggerstatus})`"
+                    :disabled="!allow_triggers"
+                    @change="update_controller(controller)"
+                    @click.stop
+                  >
+                    <template v-slot:label>
+                      {{ controller.niceName }}
+                      <span v-if="controller.requiresInstance">
+                        ({{ controller.instanceName }})
+                      </span>
+                    </template>
+                  </v-switch>
+                </v-expansion-panel-header>
+                <v-expansion-panel-content>
+                  <v-expansion-panels>
+                    <v-expansion-panel v-for="trigger in controller.triggers" class="grey darken-3">
+                      <v-expansion-panel-header>
+                        <v-switch
+                          v-model="trigger.enabled"
+                          :disabled="!controller.enabled || !allow_triggers"
+                          @change="update_trigger(trigger)"
+                          @click.stop
+                        >
+                          <template v-slot:label>
+                            <b>{{trigger.label}}</b>
+                            <small style="padding-left: 8px" v-if="trigger.description">
+                              {{trigger.description}}
+                            </small>
+                          </template>
+                        </v-switch>
+                      </v-expansion-panel-header>
+                      <v-expansion-panel-content>
+                        <v-card>
+                          <v-card-title> [{{trigger.label}}] </v-card-title>
+                          <v-card-text>
+                            <p>{{trigger.description}}</p>
+                            <p>{{trigger.extrahelp}}</p>
+                          </v-card-text>
+                        </v-card>
+                        <v-card v-if="trigger.args.length > 0">
+                          <v-card-title>Arguments</v-card-title>
+                          <v-card-text>
+                            <v-list>
+                              <v-list-item v-for="arg in trigger.args" class="trigger-arg">
+                                <v-list-item-content>
+                                  <v-list-item-title>
+                                    {{arg.name}}
+                                    <v-chip x-small style="margin-left: 8px">
+                                      {{arg.type.toUpperCase()}}
+                                    </v-chip>
+                                  </v-list-item-title>
+                                  <p class="text--secondary"><em>{{arg.description}}</em></p>
+                                  <p class="text--secondary"><small>{{arg.help}}</small></p>
+                                </v-list-item-content>
+                              </v-list-item>
+                            </v-list>
+                          </v-card-text>
+                        </v-card>
+                        <v-card>
+                          <v-card-title>Examples</v-card-title>
+                          <v-card-text>
+                            <v-list>
+                              <v-list-item
+                                class="trigger-example"
+                                v-for="example in trigger.examples"
+                                style="font-size: 1.2em"
+                              >
+                                <pre><code>{{example}}</code></pre>
+                              </v-list-item>
+                            </v-list>
+                          </v-card-text>
+                        </v-card>
+                      </v-expansion-panel-content>
+                    </v-expansion-panel>
+                  </v-expansion-panels>
+                </v-expansion-panel-content>
+              </v-expansion-panel>
+            </v-expansion-panels>
+          </div>
+
           <!-- STATUS BAR ITEMS -->
           <div id="status-bar"></div>
 
@@ -554,97 +650,6 @@
             </div>
 
             <!-- TRIGGERS PAGE -->
-            <div v-if="state=='triggers'" class="triggers">
-              <h3>Triggers</h3>
-              <ul>
-                <li>
-                  <label>
-                    <input
-                      type="checkbox"
-                      v-model="allow_triggers"
-                      @change="update_allow_triggers"
-                    />
-                    Enable / Disable All Triggers ({{ triggerstatus }})
-                  </label>
-                </li>
-              </ul>
-              <hr />
-              <ul v-for="controller in controllers">
-                <li class="trigger-box bulk">
-                  <label>
-                    <input
-                      :disabled="!allow_triggers"
-                      type="checkbox"
-                      @change="update_controller(controller)"
-                      v-model="controller.enabled"
-                    />
-                    <div class="trigger-meta">
-                      <div
-                        class="trigger-title"
-                        style="display: inline-block; vertical-align: middle"
-                      >
-                        <h4>
-                          {{ controller.niceName }}
-                          <span v-if="controller.requiresInstance"
-                            >({{ controller.instanceName }})</span
-                          >
-                          - {{controller.enabled ? 'Enabled' : 'Disabled'}}
-                        </h4>
-                      </div>
-                    </div>
-                    <button
-                      :disabled="!controller.enabled"
-                      @click="toggleExpand(controller)"
-                      class="expander"
-                    >
-                      {{isExpanded(controller) ? '&#9650;' : '&#9660;'}}
-                    </button>
-                  </label>
-                </li>
-                <li
-                  v-if="controller.enabled && isExpanded(controller)"
-                  v-for="trigger in controller.triggers"
-                  class="trigger-box"
-                >
-                  <label>
-                    <input
-                      :disabled="!controller.enabled || !allow_triggers"
-                      type="checkbox"
-                      @change="update_trigger(trigger)"
-                      v-model="trigger.enabled"
-                    />
-                    <div class="trigger-meta">
-                      <div
-                        class="trigger-title"
-                        style="display: inline-block; vertical-align: middle"
-                      >
-                        <pre>[{{trigger.label}}]</pre>
-                        <div class="trigger-description">{{trigger.description}}</div>
-                        <div class="trigger-description">{{trigger.extrahelp}}</div>
-                        <div v-if="trigger.args.length > 0">
-                          <h5>Arguments:</h5>
-                          <div style="margin-left: 10px">
-                            <div v-for="arg in trigger.args" class="trigger-arg">
-                              &lt;{{arg.name}}:{{arg.type}}&gt; ({{arg.description}})<br /><small
-                                >{{arg.help}}</small
-                              >
-                            </div>
-                          </div>
-                        </div>
-                        <div v-if="trigger.examples.length > 0">
-                          <h5>Examples:</h5>
-                          <div style="margin-left: 10px">
-                            <div class="trigger-example" v-for="example in trigger.examples">
-                              <pre><code>{{example}}</code></pre>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </label>
-                </li>
-              </ul>
-            </div>
           </div>
         </v-main>
       </v-app>
