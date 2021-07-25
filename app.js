@@ -176,6 +176,7 @@ wss.on( 'connection', function connection( ws ) {
 				break;
 			case 'update_config':
 				console.log( 'updating config' );
+				Log( data );
 				for ( let key of Object.keys( config ) ) {
 					if ( config[ key ] != data[ key ] ) config[ key ] = data[ key ];
 				}

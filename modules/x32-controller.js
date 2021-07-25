@@ -166,7 +166,8 @@ class X32Controller extends Module {
 	updateConfig( config ) {
 		super.updateConfig( config );
 		this.host = config.host;
-		this.connect();
+		if ( this.host && this.host != '' )
+			this.connect();
 	}
 
 	close() {

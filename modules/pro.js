@@ -52,38 +52,37 @@ class ProController extends Module {
     // this.options = options;
 
     this.updateConfig( config );
+    this._registerDefaultTriggers();
 
   }
 
   updateConfig( config ) {
-    let { host, port, sd_pass, version = 6, remote_pass } = config;
+    console.log( 'NEW PRO CONFIG: ' );
+    console.log( JSON.stringify( config ) );
+    super.updateConfig( config );
+
+    let { host, port, sd_pass, version = 6, remote_pass } = this.config;
     this.host = host;
     this.port = port;
     this.version = version;
     this.sd_pass = sd_pass;
     this.remote_pass = remote_pass;
+    this.events = []
 
     // setup connections
-    if ( this.sd ) this.sd.removeAllListeners();
+    if ( this.sd ) {
+      this.sd.removeAllListeners();
+      this.sd.close();
+    }
     this.sd = new ProSDClient( host, port, sd_pass, version, this );
-
-    if ( this.remote ) this.remote.removeAllListeners();
-    this.remote = new ProRemoteClient( host, port, remote_pass, version, this );
-
-    // exposes the names of the events available on this emitter
     this.events = [
+      ...this.events,
       'sdupdate',
       'sddata',
       'msgupdate',
       'sysupdate',
       'slideupdate',
-      // timer update is not used anymore
-      // because the clocksupdate is more reliable
-      // 'timerupdate',
-      'clocksupdate',
-      'remoteupdate',
-      'remotedata',
-    ];
+    ]
 
     this.sd.on( 'update', () => this.emit( 'sdupdate', this.fullStatus() ) );
     this.sd.on( 'data', ( data ) => this.emit( 'sddata', data ) );
@@ -91,13 +90,19 @@ class ProController extends Module {
     this.sd.on( 'sysupdate', ( data ) => this.emit( 'sysupdate', data ) );
     this.sd.on( 'slideupdate', ( data ) => this.emit( 'slideupdate', data ) );
 
-    // no longer used... we now rely on the .remote.clocks for timer updates
-    // sd sends update on every individual timer
-    // this.sd.on( 'timerupdate', ( data ) => {
-    //   this.mergeClocks();
-    //   this.emit( 'timerupdate', data );
-    // } );
+    if ( this.remote ) {
+      this.remote.removeAllListeners();
+      this.remote.close();
+    }
+    this.remote = new ProRemoteClient( host, port, remote_pass, version, this );
+    this.events = [
+      ...this.events,
+      'clocksupdate',
+      'remoteupdate',
+      'remotedata',
+    ];
 
+    this.remote.removeAllListeners();
     this.remote.on( 'update', () => this.emit( 'remoteupdate', this.fullStatus() ) );
     this.remote.on( 'clocksupdate', () => {
       // this.mergeClocks(); // not reliable since the 
@@ -112,8 +117,6 @@ class ProController extends Module {
         }
       }
     } );
-
-    this._registerDefaultTriggers();
   }
 
   getInfo() {
@@ -265,7 +268,12 @@ class ProSDClient extends EventEmitter {
 
 
   close() {
-    this.ws?.terminate();
+    if ( this.ws ) {
+      this.ws?.removeAllListeners();
+      this.ws?.terminate();
+      delete this.ws;
+    }
+
     this.connected = false;
     this.active = false;
     this.notify();
@@ -328,13 +336,14 @@ class ProSDClient extends EventEmitter {
   }
 
   send( Obj ) {
+    console.log( JSON.stringify( Obj ) );
     this.ws.send( JSON.stringify( Obj ) );
   }
 
   authenticate() {
     let auth = {
       pwd: this.password,
-      ptl: this.version * 100 + 10,
+      ptl: 610,
       acn: 'ath',
     };
     this.send( auth );
@@ -455,10 +464,11 @@ class ProRemoteClient extends EventEmitter {
   }
 
   close() {
-    this.ws?.terminate();
+    this.ws?.close();
     this.connected = false;
     this.controlling = false;
     this.notify();
+    this.removeAllListeners();
   }
 
   reconnect( delay = 0 ) {
@@ -526,13 +536,14 @@ class ProRemoteClient extends EventEmitter {
         responseAction = 'presentationCurrent';
       this.callbacks[ responseAction ] = callback;
     }
+    console.log( JSON.stringify( Obj ) );
     this.ws.send( JSON.stringify( Obj ) );
   }
 
   authenticate() {
     let auth = {
       password: this.password,
-      protocol: this.version * 100,
+      protocol: this.version == 7 ? '701' : '600',
       action: 'authenticate',
     };
     this.send( auth );
@@ -730,7 +741,7 @@ class ProRemoteClient extends EventEmitter {
     this.send(
       {
         action: 'presentationTriggerIndex',
-        slideIndex: index,
+        slideIndex: this.version == 7 ? index.toString() : index,
         presentationPath: path,
       },
       callback

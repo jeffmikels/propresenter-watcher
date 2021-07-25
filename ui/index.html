@@ -740,6 +740,7 @@
           },
           request_reconnect() {
             // ws.bettersend('request_reconnect', this.selected_port);
+            this.config.controllers = this.controllers;
             ws.bettersend('update_config', this.config);
           },
           update_midi() {
@@ -747,6 +748,7 @@
           },
           update_config() {
             console.log(this.config);
+            this.config.controllers = this.controllers;
             ws.bettersend('update_config', this.config);
           },
           update_allow_triggers() {
@@ -811,12 +813,12 @@
               switch (message) {
                 // this one cascades to the next one
                 case 'full_status':
+                  this.config = data.config;
                   this.pro_status = data.pro_status;
                   this.controllers = data.controllers;
                   this.triggers = data.triggers;
                 case 'status':
                   this.config = data.config;
-                  // Vue.set(this, 'config', data.config);
                   this.allow_triggers = data.allow_triggers;
                   if (this.first_load) {
                     this.state = data.pro_status.connected ? 'home' : 'configuration';
