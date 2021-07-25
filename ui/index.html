@@ -26,14 +26,6 @@
         margin-bottom: 16px;
       }
 
-      input,
-      button,
-      textarea {
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu',
-          'Helvetica Neue', Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-          'Segoe UI Symbol';
-      }
-
       #status-bar {
         grid-row: 3;
         grid-column: 1 / 4;
@@ -48,47 +40,10 @@
         overflow: auto;
       }
 
-      h1 {
-        margin-top: 0;
-      }
-
-      li {
-        margin-bottom: 3px;
-        list-style: none;
-      }
-
-      label.text {
-        width: 300px;
-        display: inline-block;
-      }
-
-      input {
-        display: inline-block;
-        vertical-align: middle;
-        border: 1px solid #333;
-        border-radius: 2px;
-        background: none;
-        padding: 6px;
-        color: white;
-      }
-
       .slide-image-left {
         margin-left: 12px;
       }
 
-      .box {
-        border: 1px solid #eee;
-        border-color: white;
-        border-radius: 3px;
-        background: #222;
-        padding: 20px;
-        font-size: 1.2em;
-        font-weight: 600;
-        overflow-x: auto;
-        /* -ms-overflow-style: none; */
-        /* scrollbar-width: none; */
-      }
-      /* .box::-webkit-scrollbar {display:none;} */
       .current_slide .box {
         border: 2px solid orange;
       }
@@ -151,117 +106,12 @@
         aspect-ratio: 7.14;
       }
 
-      input[type='checkbox'] {
-        zoom: 2;
-      }
-
-      li.trigger-box {
-        border: 2px solid #333;
-        font-size: 1.1em;
-      }
-      li.trigger-box label {
-        display: flex;
-        align-items: center;
-      }
-      li.trigger-box.bulk {
-        background: #333;
-      }
-      li.trigger-box small {
-        font-size: 0.7em;
-      }
-      li.trigger-box input,
-      li.trigger-box button {
-        margin: 0 10px 0 5px;
-      }
-      .trigger-title {
-        font-size: 1.2em;
-      }
-      .trigger-description {
-        font-size: 0.8em;
-        margin-bottom: 10px;
-      }
-      .trigger-meta {
-        overflow-x: auto;
-        flex-grow: 10;
-      }
-      .trigger-meta h5 {
-        margin-bottom: 0;
-      }
-
-      h1,
-      h2,
-      h3,
-      h4 {
-        font-weight: 100;
-      }
-
       #status-bar {
         font-weight: 700;
       }
 
       #content-pane {
         padding: 10px;
-      }
-      #content-pane h3 {
-        font-size: 36px;
-      }
-      #content-pane .btn {
-        background: var(--dark);
-        border: 1px solid var(--bright);
-        padding: 4px 10px;
-        color: var(--bright);
-        font-size: 24px;
-        transition: all 0.5s;
-        text-transform: uppercase;
-      }
-      #content-pane .btn:hover {
-        background: var(--bright);
-        color: var(--dark);
-      }
-
-      #content-pane .configuration h4 {
-        margin-top: 30px;
-        font-size: 26px;
-      }
-      #content-pane .configuration li {
-        display: flex;
-        align-items: center;
-      }
-      #content-pane .configuration li label.text {
-        width: 200px;
-        text-align: right;
-        padding-right: 10px;
-        font-weight: 900;
-      }
-      #content-pane .configuration li input {
-        flex-grow: 10;
-        font-size: 24px;
-      }
-
-      #content-pane .triggers .expander {
-        padding: 10px 10px;
-        font-size: 20px;
-        background: none;
-        border: none;
-        color: var(--bright);
-      }
-      #content-pane .triggers .expander:disabled {
-        color: var(--dark);
-      }
-
-      #content-pane .home .slide .note {
-        border-top: 1px dotted var(--light);
-        margin-top: 12px;
-      }
-      #content-pane .home .timers-section .timers {
-        display: flex;
-        justify-content: space-evenly;
-      }
-      #content-pane .home .timers-section .timers .timer {
-        text-align: center;
-        background: var(--dark);
-        padding: 4px 14px 10px;
-        border: 1px solid var(--bright);
       }
 
       .presentation-section .presentation {
@@ -524,6 +374,122 @@
               </div>
             </v-container>
           </div>
+
+          <div v-if="state=='triggers'" class="triggers">
+            <v-container>
+              <h1>Triggers</h1>
+              <v-switch
+                v-model="allow_triggers"
+                :label="`Enable / Disable All Triggers (${triggerstatus})`"
+              >
+              </v-switch>
+            </v-container>
+            <hr />
+            <v-expansion-panels>
+              <v-expansion-panel v-for="controller in controllers">
+                <v-expansion-panel-header>
+                  <v-switch
+                    v-model="controller.enabled"
+                    :label="`Enable / Disable All Triggers (${triggerstatus})`"
+                    :disabled="!allow_triggers"
+                    @change="update_controller(controller)"
+                    @click.stop
+                  >
+                    <template v-slot:label>
+                      {{ controller.niceName }}
+                      <span v-if="controller.requiresInstance">
+                        ({{ controller.instanceName }})
+                      </span>
+                    </template>
+                  </v-switch>
+                </v-expansion-panel-header>
+                <v-expansion-panel-content>
+                  <v-expansion-panels>
+                    <v-expansion-panel v-for="trigger in controller.triggers" class="grey darken-3">
+                      <v-expansion-panel-header>
+                        <v-switch
+                          v-model="trigger.enabled"
+                          :disabled="!controller.enabled || !allow_triggers"
+                          @change="update_trigger(trigger)"
+                          @click.stop
+                        >
+                          <template v-slot:label>
+                            <b>{{trigger.label}}</b>
+                            <small style="padding-left: 8px" v-if="trigger.description">
+                              {{trigger.description}}
+                            </small>
+                          </template>
+                        </v-switch>
+                      </v-expansion-panel-header>
+                      <v-expansion-panel-content>
+                        <v-card>
+                          <v-card-title> [{{trigger.label}}] </v-card-title>
+                          <v-card-text>
+                            <p>{{trigger.description}}</p>
+                            <p>{{trigger.extrahelp}}</p>
+                          </v-card-text>
+                        </v-card>
+                        <v-card v-if="trigger.args.length > 0">
+                          <v-card-title>Arguments</v-card-title>
+                          <v-card-text>
+                            <v-list>
+                              <v-list-item v-for="arg in trigger.args" class="trigger-arg">
+                                <v-list-item-content>
+                                  <v-list-item-title>
+                                    {{arg.name}}
+                                    <v-chip x-small style="margin-left: 8px">
+                                      {{arg.type.toUpperCase()}}
+                                    </v-chip>
+                                  </v-list-item-title>
+                                  <p class="text--secondary"><em>{{arg.description}}</em></p>
+                                  <p class="text--secondary"><small>{{arg.help}}</small></p>
+                                </v-list-item-content>
+                              </v-list-item>
+                            </v-list>
+                          </v-card-text>
+                        </v-card>
+                        <v-card>
+                          <v-card-title>Examples</v-card-title>
+                          <v-card-text>
+                            <v-list>
+                              <v-list-item
+                                class="trigger-example"
+                                v-for="example in trigger.examples"
+                                style="font-size: 1.2em"
+                              >
+                                <pre><code>{{example}}</code></pre>
+                              </v-list-item>
+                            </v-list>
+                          </v-card-text>
+                        </v-card>
+                      </v-expansion-panel-content>
+                    </v-expansion-panel>
+                  </v-expansion-panels>
+                </v-expansion-panel-content>
+              </v-expansion-panel>
+            </v-expansion-panels>
+          </div>
+          <div v-if="state=='configuration'" class="configuration">
+            <v-container>
+              <h1>Configuration</h1>
+              <v-card v-for="controller in controllers">
+                <div v-if="! isEmpty(controller.config)">
+                  <v-card-title>{{controller.niceName}}</v-card-title>
+                  <v-card-text>
+                    <div v-for="value, key in controller.config" v-if="key != 'triggers'">
+                      <v-text-field
+                        @change="update_controller_config(controller)"
+                        v-model="controller.config[key]"
+                        :label="key"
+                      ></v-text-field>
+                    </div>
+                    <v-btn @click="request_reconnect(controller)">Update</v-btn>
+                  </v-card-text>
+                </div>
+              </v-card>
+            </v-container>
+          </div>
+
           <!-- STATUS BAR ITEMS -->
           <div id="status-bar"></div>
 
@@ -531,119 +497,6 @@
             <!-- PRO REMOTE HOME PAGE -->
             <div class="home" v-if="connected && state=='home'">
               <iframe id="lower3" src="lower3.html"></iframe>
-            </div>
-
-            <!-- CONFIGURATION PAGE -->
-            <div v-if="state=='configuration'" class="configuration">
-              <h3>Controllers Configuration</h3>
-              <div v-for="controller in controllers">
-                <div v-if="! isEmpty(controller.config)">
-                  <h4>{{controller.niceName}}</h4>
-                  <ul>
-                    <li v-for="value, key in controller.config" v-if="key != 'triggers'">
-                      <label class="text">{{key}}</label>
-                      <input
-                        @change="update_controller_config(controller)"
-                        v-model="controller.config[key]"
-                      />
-                    </li>
-                  </ul>
-                  <button class="btn" @click="request_reconnect(controller)">UPDATE</button>
-                </div>
-              </div>
-            </div>
-
-            <!-- TRIGGERS PAGE -->
-            <div v-if="state=='triggers'" class="triggers">
-              <h3>Triggers</h3>
-              <ul>
-                <li>
-                  <label>
-                    <input
-                      type="checkbox"
-                      v-model="allow_triggers"
-                      @change="update_allow_triggers"
-                    />
-                    Enable / Disable All Triggers ({{ triggerstatus }})
-                  </label>
-                </li>
-              </ul>
-              <hr />
-              <ul v-for="controller in controllers">
-                <li class="trigger-box bulk">
-                  <label>
-                    <input
-                      :disabled="!allow_triggers"
-                      type="checkbox"
-                      @change="update_controller(controller)"
-                      v-model="controller.enabled"
-                    />
-                    <div class="trigger-meta">
-                      <div
-                        class="trigger-title"
-                        style="display: inline-block; vertical-align: middle"
-                      >
-                        <h4>
-                          {{ controller.niceName }}
-                          <span v-if="controller.requiresInstance"
-                            >({{ controller.instanceName }})</span
-                          >
-                          - {{controller.enabled ? 'Enabled' : 'Disabled'}}
-                        </h4>
-                      </div>
-                    </div>
-                    <button
-                      :disabled="!controller.enabled"
-                      @click="toggleExpand(controller)"
-                      class="expander"
-                    >
-                      {{isExpanded(controller) ? '&#9650;' : '&#9660;'}}
-                    </button>
-                  </label>
-                </li>
-                <li
-                  v-if="controller.enabled && isExpanded(controller)"
-                  v-for="trigger in controller.triggers"
-                  class="trigger-box"
-                >
-                  <label>
-                    <input
-                      :disabled="!controller.enabled || !allow_triggers"
-                      type="checkbox"
-                      @change="update_trigger(trigger)"
-                      v-model="trigger.enabled"
-                    />
-                    <div class="trigger-meta">
-                      <div
-                        class="trigger-title"
-                        style="display: inline-block; vertical-align: middle"
-                      >
-                        <pre>[{{trigger.label}}]</pre>
-                        <div class="trigger-description">{{trigger.description}}</div>
-                        <div class="trigger-description">{{trigger.extrahelp}}</div>
-                        <div v-if="trigger.args.length > 0">
-                          <h5>Arguments:</h5>
-                          <div style="margin-left: 10px">
-                            <div v-for="arg in trigger.args" class="trigger-arg">
-                              &lt;{{arg.name}}:{{arg.type}}&gt; ({{arg.description}})<br /><small
-                                >{{arg.help}}</small
-                              >
-                            </div>
-                          </div>
-                        </div>
-                        <div v-if="trigger.examples.length > 0">
-                          <h5>Examples:</h5>
-                          <div style="margin-left: 10px">
-                            <div class="trigger-example" v-for="example in trigger.examples">
-                              <pre><code>{{example}}</code></pre>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </label>
-                </li>
-              </ul>
             </div>
           </div>
         </v-main>
