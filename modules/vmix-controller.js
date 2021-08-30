@@ -311,16 +311,16 @@ class VmixController extends Module {
     this.registerTrigger(
       new ModuleTrigger(
         'vmix',
-        'takes a urlencoded string, and passes it to the vmix api unchanged',
+        'takes a urlencoded string, and passes it to the vmix api unchanged. NOTE: if you use the short tag, you can chain multiple calls by separating them with commas',
         [
           new ModuleTriggerArg(
             'query',
             'string',
-            'Function=Cut&Input=1&Duration=3000',
+            'Function=SetDynamicValue1&Value=hello+world,Function=Cut&Input=1&Duration=4000',
             false
           ),
         ],
-        ( _, query = null ) => ( query == null ? null : this.send( query ) )
+        ( _, query = null ) => ( query == null ? null : Array.isArray( query ) ? this.sendAll( query ) : this.send( query ) )
       )
     );
 
@@ -386,8 +386,15 @@ class VmixController extends Module {
       } );
   }
 
+  sendAll( queryList = [] ) {
+    let promises = []
+    for ( let query of queryList ) {
+      promises.push( this.send( query ) )
+    }
+    return Promise.all( promises );
+  }
+
   api( options ) {
-    // coerce to array first
     if ( Array.isArray( options ) ) {
       let promises = [];
       for ( let option of options ) promises.push( this.api( option ) );
