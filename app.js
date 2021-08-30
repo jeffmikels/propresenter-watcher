@@ -241,6 +241,9 @@ wss.on( 'connection', function connection( ws ) {
 				midi.closePort();
 				midi.openPort( data );
 				break;
+			case 'manual_notes_send':
+				fireTriggersFromNotes( data );
+				break;
 			case 'toggle_allow_triggers':
 				allow_triggers = data;
 				broadcast( 'status', getStatus() );
@@ -483,28 +486,16 @@ function setupProListeners() {
 		console.log( '--------- PRO SLIDE UPDATE -------------' );
 		console.log( data );
 
-		let foundTags = parseNotes( pro.slides.current.notes );
-		Log( foundTags );
-
 		// always update the lower3
 		// later triggers might override this
 		lower3.text = pro.slides.current.text;
 		lower3.html = markdown( pro.slides.current.text );
 		lower3.caption = '';
 
-
 		// for each found tag, fire the matching triggers
-		let used = false;
 		if ( allow_triggers ) {
-			for ( let { tag, args } of foundTags ) {
-				used = fireTriggers( tag, args, pro ) || used;
-			}
-			used = fireTriggers( '~slideupdate~', [], pro ) || used;
-
-			if ( !used ) {
-				console.log( 'No triggers configured for this data:' );
-				console.log( data );
-			}
+			fireTriggersFromNotes( pro.slides.current.notes );
+			fireTriggers( '~slideupdate~', [], pro );
 		} else {
 			console.log( 'ProPresenter Update, but triggers are disabled.' );
 		}
@@ -523,6 +514,7 @@ function setupProListeners() {
 	pro.on( 'remoteupdate', ( data ) => broadcast( 'remoteupdate', data ) );
 	pro.on( 'log', console.log ); // skip the weblog
 }
+
 
 function getStatus() {
 	if ( lower3.text == '' && pro.slides.current.text != '' ) {
@@ -672,6 +664,22 @@ function parseNotes( s = '' ) {
 	}
 	return retval;
 }
+
+function fireTriggersFromNotes( noteText ) {
+	let used = false;
+	let foundTags = parseNotes( noteText );
+	Log( foundTags );
+
+	for ( let { tag, args } of foundTags ) {
+		used = fireTriggers( tag, args, pro ) || used;
+	}
+
+	if ( !used ) {
+		console.log( 'No triggers configured for this data:' );
+		console.log( data );
+	}
+}
+
 
 function httpHandler( req, res ) {
 	// console.log(req);

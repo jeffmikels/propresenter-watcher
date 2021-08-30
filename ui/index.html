@@ -22,6 +22,12 @@
         background: var(--bright);
       }
 
+      textarea {
+        width: 100%;
+        color: ivory;
+        padding: 10px;
+        font-family: monospace;
+      }
       .v-card {
         margin-bottom: 16px;
       }
@@ -385,6 +391,13 @@
               </v-switch>
             </v-container>
             <hr />
+            <v-container>
+              <h1>Manual Send</h1>
+              <p>Whatever you paste here will be treated as a ProPresenter Notes field.</p>
+              <textarea style="width: 100%" v-model="manual_send"></textarea><br />
+              <v-btn @click="do_manual_send()">Send</v-btn>
+            </v-container>
+            <hr />
             <v-expansion-panels>
               <v-expansion-panel v-for="controller in controllers">
                 <v-expansion-panel-header>
@@ -519,6 +532,7 @@
         data: {
           first_load: true,
           state: 'loading',
+          manual_send: '',
           allow_triggers: true,
           show_config: false,
           show_triggers: false,
@@ -590,6 +604,9 @@
           },
           disable_controller(controller) {
             for (let t of controller.triggers) t.enabled = controller.enabled;
+          },
+          do_manual_send() {
+            ws.bettersend('manual_notes_send', this.manual_send);
           },
           request_reconnect() {
             // ws.bettersend('request_reconnect', this.selected_port);
