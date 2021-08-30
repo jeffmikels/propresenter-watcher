@@ -316,7 +316,7 @@ class VmixController extends Module {
           new ModuleTriggerArg(
             'query',
             'string',
-            'Function=Slide&Input=1&Duration=3000',
+            'Function=Cut&Input=1&Duration=3000',
             false
           ),
         ],
@@ -336,12 +336,12 @@ class VmixController extends Module {
     this.registerTrigger(
       new ModuleTrigger(
         'vmixjson',
-        'sends commands directly to the vmix api based on a json string',
+        'sends commands directly to the vmix api after parsing them from a json string, can be a single object or an array',
         [
           new ModuleTriggerArg(
             'json_string',
             'json',
-            '{"Function" : "Slide", "Input": 1, "Duration": 3000}',
+            '[{"Function": "SetDynamicValue1", "Value": "hello world"},{"Function": "Cut", "Input": 1, "Duration": 4000}]',
             false
           ),
         ],
@@ -387,6 +387,13 @@ class VmixController extends Module {
   }
 
   api( options ) {
+    // coerce to array first
+    if ( Array.isArray( options ) ) {
+      let promises = [];
+      for ( let option of options ) promises.push( this.api( option ) );
+      return Promise.all( promises );
+    }
+
     let cmds = [];
     for ( let [ key, value ] of Object.entries( options ) ) {
       cmds.push( `${key}=${encodeURI( value )}` );
