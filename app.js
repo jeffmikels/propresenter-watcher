@@ -676,7 +676,6 @@ function fireTriggersFromNotes( noteText ) {
 
 	if ( !used ) {
 		console.log( 'No triggers configured for this data:' );
-		console.log( data );
 	}
 }
 
