@@ -16,7 +16,7 @@
     "obs-websocket-js": "^4.0.2",
     "osc": "^2.4.1",
     "socket.io": "^2.2.0",
-    "telnet-client": "^1.2.4",
+    "telnet-client": "^1.4.9",
     "uuid": "^8.3.2",
     "ws": "^7.1.2"
   },
