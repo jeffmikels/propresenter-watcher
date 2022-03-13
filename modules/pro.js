@@ -336,6 +336,7 @@ class ProSDClient extends EventEmitter {
   }
 
   send( Obj ) {
+    console.log( 'sending...' );
     console.log( JSON.stringify( Obj ) );
     this.ws.send( JSON.stringify( Obj ) );
   }
@@ -499,9 +500,15 @@ class ProRemoteClient extends EventEmitter {
     }
 
     this.ws.on( 'message', ( data ) => {
-      data = JSON.parse( data );
-      this.parent.log( data );
-      this.handleData( data );
+      // sometimes ProPresenter sends invalid data... be resilient
+      try {
+        data = JSON.parse( data );
+        this.parent.log( data );
+        this.handleData( data );
+      } catch ( e ) {
+        this.parent.log( 'RECEIVED INVALID JSON DATA' );
+        return;
+      }
       // this.notify();
     } );
     this.ws.on( 'open', () => {
@@ -536,6 +543,7 @@ class ProRemoteClient extends EventEmitter {
         responseAction = 'presentationCurrent';
       this.callbacks[ responseAction ] = callback;
     }
+    console.log( 'sending...' );
     console.log( JSON.stringify( Obj ) );
     this.ws.send( JSON.stringify( Obj ) );
   }
@@ -567,7 +575,7 @@ class ProRemoteClient extends EventEmitter {
   loadStatus() {
     this.getClocks();
     this.getLibrary();
-    this.getPlaylists();
+    // this.getPlaylists(); // crashes propresenter 7.8
     this.getPresentation();
     this.getCurrentSlideIndex();
     // if the stage display client is connected
