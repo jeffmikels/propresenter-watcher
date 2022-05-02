@@ -21,7 +21,7 @@
     "ws": "^7.1.2"
   },
   "devDependencies": {
-    "@babel/core": "^7.15.5",
+    "@babel/core": "^7.17.10",
     "@babel/eslint-parser": "^7.15.4",
     "@babel/plugin-syntax-class-properties": "^7.12.13",
     "@babel/preset-env": "^7.15.6",
