@@ -18,7 +18,7 @@
     "socket.io": "^2.2.0",
     "telnet-client": "^1.4.9",
     "uuid": "^8.3.2",
-    "ws": "^7.1.2"
+    "ws": "^8.7.0"
   },
   "devDependencies": {
     "@babel/core": "^7.15.5",
