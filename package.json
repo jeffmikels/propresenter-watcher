@@ -10,7 +10,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "got": "^9.6.0",
+    "got": "^12.4.1",
     "isomorphic-ws": "^4.0.1",
     "midi": "^1.0.4",
     "obs-websocket-js": "^4.0.2",
