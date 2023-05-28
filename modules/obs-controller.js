@@ -1,5 +1,5 @@
-const OBSWebSocket = require( 'obs-websocket-js' );
-const { Module, ModuleTrigger, ModuleTriggerArg } = require( './module' );
+const { default: OBSWebSocket } = require('obs-websocket-js');
+const { Module, ModuleTrigger, ModuleTriggerArg } = require('./module');
 
 // NOTE: OBS WebSocket Documentation is here:
 // https://www.npmjs.com/package/obs-websocket-js
@@ -8,12 +8,12 @@ const { Module, ModuleTrigger, ModuleTriggerArg } = require( './module' );
 class OBSController extends Module {
   static name = 'obs';
   static niceName = 'OBS Controller';
-  static create( config ) {
-    return new OBSController( config );
+  static create(config) {
+    return new OBSController(config);
   }
 
-  constructor ( config ) {
-    super( config );
+  constructor(config) {
+    super(config);
 
     this.obs = new OBSWebSocket();
     this.studioMode = false;
@@ -30,7 +30,7 @@ class OBSController extends Module {
     /*
 
     TODO: Allow the use of numbers to refer to scenes and scene items
-    TODO: use catch on all this.obs.send commands !!!
+    TODO: use catch on all this.obs.call commands !!!
 
     TRIGGERS:
       [x] ~slideupdate~ -> this.setSourceText(...);
@@ -69,19 +69,16 @@ class OBSController extends Module {
         '~slideupdate~',
         `Will update a text source identified by default_title_source in the configuration on every slide update unless the slide notes contain "noobs"`,
         [],
-        ( pro ) => {
-          if ( pro.slides.current.notes.match( /noobs/ ) ) return;
-          this.setSourceText(
-            this.default_title_source,
-            pro.slides.current.text
-          );
-        }
-      )
+        (pro) => {
+          if (pro.slides.current.notes.match(/noobs/)) return;
+          this.setSourceText(this.default_title_source, pro.slides.current.text);
+        },
+      ),
     );
 
     // For advanced OBS control, put OBS WebSocket commands in JSON text between obs tags
-    // will be passed directly to obs.send like this:
-    // obs.send(key, value)
+    // will be passed directly to obs.call like this:
+    // obs.call(key, value)
     // [obs]
     // {
     // 	"SetCurrentSource": {
@@ -98,29 +95,29 @@ class OBSController extends Module {
             'json_string',
             'json',
             '{"SetCurrentScene": {"scene-name": "Live Broadcast"}}',
-            false
+            false,
           ),
         ],
-        ( _, data = null ) => ( data == null ? null : this.multiSend( data ) )
-      )
+        (_, data = null) => (data == null ? null : this.multiSend(data)),
+      ),
     );
 
     this.registerTrigger(
       new ModuleTrigger(
         'obsstream',
         'toggles the obs stream on or off, leave blank to just toggle',
-        [ new ModuleTriggerArg( 'onoff', 'bool', '', true ), ],
-        ( _, onoff = null ) => ( this.setStreaming( onoff ) )
-      )
+        [new ModuleTriggerArg('onoff', 'bool', '', true)],
+        (_, onoff = null) => this.setStreaming(onoff),
+      ),
     );
 
     this.registerTrigger(
       new ModuleTrigger(
         'obsrecord',
         'toggles the obs recording on or off, leave blank to just toggle',
-        [ new ModuleTriggerArg( 'onoff', 'bool', '', true ), ],
-        ( _, onoff = null ) => ( this.setRecording( onoff ) )
-      )
+        [new ModuleTriggerArg('onoff', 'bool', '', true)],
+        (_, onoff = null) => this.setRecording(onoff),
+      ),
     );
 
     this.registerTrigger(
@@ -128,11 +125,11 @@ class OBSController extends Module {
         'obsoutput',
         'sets the obs output on or off, default is "on"',
         [
-          new ModuleTriggerArg( 'outputname', 'string', '', false ),
-          new ModuleTriggerArg( 'onoff', 'bool', '', true ),
+          new ModuleTriggerArg('outputname', 'string', '', false),
+          new ModuleTriggerArg('onoff', 'bool', '', true),
         ],
-        ( _, outputname, onoff = true ) => ( this.setOutput( outputname, onoff ) )
-      )
+        (_, outputname, onoff = true) => this.setOutput(outputname, onoff),
+      ),
     );
 
     this.registerTrigger(
@@ -140,33 +137,29 @@ class OBSController extends Module {
         'obstext',
         'sets the text of a source',
         [
-          new ModuleTriggerArg( 'sourcename', 'string', '', false ),
-          new ModuleTriggerArg( 'text', 'string', '', true ),
+          new ModuleTriggerArg('sourcename', 'string', '', false),
+          new ModuleTriggerArg('text', 'string', '', true),
         ],
-        ( _, source, text = '' ) => ( this.setSourceText( source, text ) )
-      )
+        (_, source, text = '') => this.setSourceText(source, text),
+      ),
     );
 
     this.registerTrigger(
       new ModuleTrigger(
         'obspreview',
         'sets the obs scene to preview. No effect unless studio mode.',
-        [
-          new ModuleTriggerArg( 'scene', 'string', '', false ),
-        ],
-        ( _, scene ) => ( this.setPreviewScene( scene ) )
-      )
+        [new ModuleTriggerArg('scene', 'string', '', false)],
+        (_, scene) => this.setPreviewScene(scene),
+      ),
     );
 
     this.registerTrigger(
       new ModuleTrigger(
         'obscut',
         'cuts to a specific scene, defaults to whatever is preview',
-        [
-          new ModuleTriggerArg( 'scenename', 'string', '', false ),
-        ],
-        ( _, scene ) => ( this.cutToScene( scene ) )
-      )
+        [new ModuleTriggerArg('scenename', 'string', '', false)],
+        (_, scene) => this.cutToScene(scene),
+      ),
     );
 
     this.registerTrigger(
@@ -174,11 +167,11 @@ class OBSController extends Module {
         'obsfade',
         'fades to a specific scene, defaults to whatever is preview',
         [
-          new ModuleTriggerArg( 'scenename', 'string', '', true ),
-          new ModuleTriggerArg( 'duration', 'number', 'in milliseconds', true ),
+          new ModuleTriggerArg('scenename', 'string', '', true),
+          new ModuleTriggerArg('duration', 'number', 'in milliseconds', true),
         ],
-        ( _, scene, duration ) => ( this.fadeToScene( scene, duration ) )
-      )
+        (_, scene, duration) => this.fadeToScene(scene, duration),
+      ),
     );
 
     this.registerTrigger(
@@ -186,12 +179,13 @@ class OBSController extends Module {
         'obstransition',
         'transition to specific scene with specific transition and duration, defaults to whatever is in preview',
         [
-          new ModuleTriggerArg( 'scenename', 'string', '', true ),
-          new ModuleTriggerArg( 'transition', 'string', '"Fade" or "Cut" or something else', true ),
-          new ModuleTriggerArg( 'duration', 'number', 'in milliseconds', true ),
+          new ModuleTriggerArg('scenename', 'string', '', true),
+          new ModuleTriggerArg('transition', 'string', '"Fade" or "Cut" or something else', true),
+          new ModuleTriggerArg('duration', 'number', 'in milliseconds', true),
         ],
-        ( _, scene = null, transition = null, duration = null ) => ( this.transitionToScene( scene, transition, duration ) )
-      )
+        (_, scene = null, transition = null, duration = null) =>
+          this.transitionToScene(scene, transition, duration),
+      ),
     );
 
     this.registerTrigger(
@@ -199,11 +193,11 @@ class OBSController extends Module {
         'obsmute',
         'mutes a specific source, defaults to toggle',
         [
-          new ModuleTriggerArg( 'source', 'string', '', false ),
-          new ModuleTriggerArg( 'onoff', 'bool', 'turn mute on or off', true ),
+          new ModuleTriggerArg('source', 'string', '', false),
+          new ModuleTriggerArg('onoff', 'bool', 'turn mute on or off', true),
         ],
-        ( _, source, onoff = null ) => ( this.setSourceMute( source, onoff ) )
-      )
+        (_, source, onoff = null) => this.setSourceMute(source, onoff),
+      ),
     );
 
     this.registerTrigger(
@@ -211,25 +205,30 @@ class OBSController extends Module {
         'obsvisible',
         'toggles visibility of a specific scene item, defaults to toggle',
         [
-          new ModuleTriggerArg( 'source', 'string', '', false ),
-          new ModuleTriggerArg( 'onoff', 'bool', 'turn source on or off', true ),
-          new ModuleTriggerArg( 'scene', 'bool', 'scene in which to toggle, defaults to current scene', true ),
+          new ModuleTriggerArg('source', 'string', '', false),
+          new ModuleTriggerArg('onoff', 'bool', 'turn source on or off', true),
+          new ModuleTriggerArg(
+            'scene',
+            'bool',
+            'scene in which to toggle, defaults to current scene',
+            true,
+          ),
         ],
-        ( _, source, onoff = null, scene = null ) => ( this.setSceneItemRender( source, onoff, scene ) )
-      )
+        (_, source, onoff = null, scene = null) => this.setSceneItemRender(source, onoff, scene),
+      ),
     );
 
-    this.updateConfig( config );
+    this.future = this.updateConfig(config);
   }
 
-  updateConfig( config ) {
-    super.updateConfig( config );
+  async updateConfig(config) {
+    super.updateConfig(config);
     let { host, port, password } = config;
     this.host = host;
     this.port = port;
     this.password = password;
     this.default_title_source = config.default_title_source ?? 'Lyrics';
-    this.connect();
+    return await this.connect();
   }
 
   getInfo() {
@@ -238,7 +237,7 @@ class OBSController extends Module {
   }
 
   getStatus() {
-    let r = {}
+    let r = {};
     r.studioMode = this.studioMode;
     r.currentSceneName = this.currentSceneName;
     r.previewSceneName = this.previewSceneName;
@@ -250,177 +249,179 @@ class OBSController extends Module {
     return r;
   }
 
-
   async connect() {
-    console.log( 'INFO: connecting to obs' )
-    if ( this.obs.connected ) this.obs.disconnect();
+    if (this.obs.connected) this.obs.disconnect();
 
     this.connected = false;
-    let address = `${this.host}:${this.port}`;
+    let address = `ws://${this.host}:${this.port}`;
     let password = this.password;
-    this.obs
-      .connect( { address, password } )
-      .then( () => {
-        this.connected = true;
+    console.log(`INFO: connecting to obs using addr: ${address}, pass: ${password}`);
+    await this.obs
+      .connect(address, password)
+      .then(() => {
+        console.log('obs connection');
 
-        this.on( 'SwitchScenes', ( d ) => ( this.currentSceneName = d.sceneName ) );
-        this.on( 'ScenesChanged', ( arr ) => this.updateScenes( arr ) );
-        this.on( 'SourceRenamed', ( d ) => this.renameSource( d ) );
+        this.connected = true;
+        this.emit('log', 'Connected to OBS');
+
+        this.on('SwitchScenes', (d) => (this.currentSceneName = d.sceneName));
+        this.on('ScenesChanged', (arr) => this.updateScenes(arr));
+        this.on('SourceRenamed', (d) => this.renameSource(d));
 
         // not implemented, but might be useful
         // this.on( 'SourceCreated', ( d ) => this.handleSourceCreated(d) );
         // this.on( 'SourceDestroyed', ( d ) => this.handleSourceDestroyed(d) );
 
         return this.getOBSStatus();
-      } )
-      .then( () => { this.emit( 'connected' ) } )
-      .catch( ( err ) => {
+      })
+      .then(() => {
+        console.log('obs connected');
+        this.emit('connected');
+        this.connected = true;
+      })
+      .catch((err) => {
         // Promise convention dicates you have a catch on every chain.
-        this.log( err );
-      } );
+        this.log(err);
+      });
 
-    this.connected = true;
+    console.log('connection finished');
 
     this.notify();
   }
 
-  notify( data ) {
-    this.emit( 'update', data );
+  notify(data) {
+    this.emit('update', data);
   }
 
-  safeSend( key, data = null ) {
-    console.log( `OBSSEND: ${key} ${JSON.stringify( data, null, 2 )}` );
-    if ( data != null )
-      return this.obs.send( key, data ).catch( ( err ) => {
+  safeSend(key, data = null) {
+    console.log(`OBSSEND: ${key} ${JSON.stringify(data, null, 2)}`);
+    if (data != null)
+      return this.obs.call(key, data).catch((err) => {
         return err;
-      } )
+      });
     else
-      return this.obs.send( key ).catch( ( err ) => {
+      return this.obs.call(key).catch((err) => {
         return err;
-      } )
+      });
   }
 
   // obj can contain multiple commands
   // JavaScript preserves the ordering of the keys
-  async multiSend( obj ) {
-    console.log( `OBSMULTISEND: ${JSON.stringify( obj, null, 2 )}` );
-    if ( !this.connected ) return;
+  async multiSend(obj) {
+    console.log(`OBSMULTISEND: ${JSON.stringify(obj, null, 2)}`);
+    if (!this.connected) return;
 
     let retval = [];
-    for ( let key of Object.keys( obj ) ) {
+    for (let key of Object.keys(obj)) {
       // it's a promise so we can wait for the results
       retval.push(
-        await this.obs.send( key, obj[ key ] )
-          .catch( ( err ) => {
-            return err;
-          }
-          ) );
+        await this.obs.call(key, obj[key]).catch((err) => {
+          return err;
+        }),
+      );
     }
     return retval;
   }
 
-  renameSource( data ) {
-    this.sources[ data.newName ] = this.sources[ data.previousName ];
+  renameSource(data) {
+    this.sources[data.newName] = this.sources[data.previousName];
     delete data.previousName;
     this.notify();
   }
 
   // don't trust the sources from the scene objects until we rewrite the code
   // to link the scene sources to the actual sources object.
-  updateScenes( arr_scenes ) {
+  updateScenes(arr_scenes) {
     this.scenes = {};
-    arr_scenes.forEach( ( e ) => ( this.scenes[ e.name ] = e ) );
+    arr_scenes.forEach((e) => (this.scenes[e.name] = e));
     this.notify();
   }
 
-  updateSources( arr_sources ) {
+  updateSources(arr_sources) {
     this.sources = {};
-    arr_sources.forEach( ( e ) => ( this.sources[ e.name ] = e ) );
+    arr_sources.forEach((e) => (this.sources[e.name] = e));
     this.notify();
   }
 
   // GLOBAL GETTERS
   async getOBSStatus() {
-    console.log( 'requesting status details from OBS' );
+    console.log('requesting status details from OBS');
     // some of the api requires studio mode
-    let [ studio, sources, scenes, preview, trans ] = await this.multiSend( {
-      GetStudioModeStatus: {},
-      GetSourcesList: {},
+    let [studio, scenes, transition] = await this.multiSend({
+      GetStudioModeEnabled: {},
       GetSceneList: {},
-      GetPreviewScene: {},
-      GetCurrentTransition: {},
-    } ).catch( e => console.log( e ) );
-    this.studioMode = studio.studioMode;
-    this.currentSceneName = scenes.currentScene;
-    this.previewSceneName = preview.name;
-    this.defaultTransition = trans.name;
-    this.defaultTransitionDuration = trans.duration ?? 0;
-    // console.log( [ studio, sources, scenes, preview ] );
-    this.updateScenes( scenes.scenes );
-    this.updateSources( sources.sources );
+      GetCurrentSceneTransition: {},
+      // GetCurrentPreviewScene: {},
+      // GetCurrentProgramScene: {},
+      // GetCurrentTransition: {},
+    }).catch((e) => console.log(e));
+    this.studioMode = studio.studioModeEnabled;
+    this.previewSceneName = scenes.currentPreviewSceneName;
+    this.currentSceneName = scenes.currentProgramSceneName;
+    this.defaultTransition = transition.name;
+    // this.defaultTransitionDuration = trans.duration ?? 0;
+    console.log([studio, scenes, transition]);
+    this.updateScenes(scenes.scenes);
+    // this.updateSources(sources.sources);
   }
 
   // GLOBAL SETTERS
-  setStudioMode( onoff = true ) {
-    return onoff
-      ? this.safeSend( 'EnableStudioMode' )
-      : this.safeSend( 'DisableStudioMode' );
+  setStudioMode(onoff = true) {
+    return onoff ? this.safeSend('EnableStudioMode') : this.safeSend('DisableStudioMode');
   }
 
   // SCENE SETTERS
-  setPreviewScene( scene ) {
-    return this.safeSend( 'SetPreviewScene', { 'scene-name': scene } );
+  setPreviewScene(scene) {
+    return this.safeSend('SetCurrentPreviewScene', { sceneName: scene });
   }
 
-  setCurrentScene( scene ) {
-    return this.safeSend( 'SetCurrentScene', { 'scene-name': scene } );
+  setCurrentScene(scene) {
+    return this.safeSend('SetCurrentProgramScene', { sceneName: scene });
   }
 
-  transitionToScene( transition = null, scene = null, duration = null ) {
+  transitionToScene(transition = null, scene = null, duration = null) {
     // remember, Javascript will preserve the insertion order of these keys
     let cmd = {};
-    if ( transition != null )
-      cmd.SetCurrentTransition = { 'transition-name': transition };
+    if (transition != null) cmd.SetCurrentSceneTransition = { transitionName: transition };
 
-    if ( duration != null ) cmd.SetTransitionDuration = { duration };
+    if (duration != null) cmd.SetTransitionDuration = { duration };
 
-    if ( scene == null ) {
-      cmd.TransitionToProgram = {};
+    if (scene == null) {
+      cmd.TriggerStudioModeTransition = {};
     } else {
-      cmd.SetCurrentScene = { 'scene-name': scene };
+      cmd.SetCurrentProgramScene = { sceneName: scene };
     }
-    return this.multiSend( cmd );
+    return this.multiSend(cmd);
   }
 
   // when input is null, we toggle between program and preview
-  fadeToScene( scene = null, duration = null ) {
-    return this.transitionToScene( 'Fade', scene, duration );
+  fadeToScene(scene = null, duration = null) {
+    return this.transitionToScene('Fade', scene, duration);
   }
 
-  cutToScene( scene = null ) {
-    return this.transitionToScene( 'Cut', scene );
+  cutToScene(scene = null) {
+    return this.transitionToScene('Cut', scene);
   }
 
-  transition( transition_type = null ) {
-    return this.transitionToScene( transition_type );
+  transition(transition_type = null) {
+    return this.transitionToScene(transition_type);
   }
 
-  fade( duration = null ) {
-    return this.fadeToScene( null, duration );
+  fade(duration = null) {
+    return this.fadeToScene(null, duration);
   }
 
   cut() {
-    return this.cutToScene( null );
+    return this.cutToScene(null);
   }
 
   // SOURCE SETTERS
-  setSourceMute( source, onoff = null ) {
-    if ( onoff == null )
-      return this.safeSend( 'ToggleMute', { source } );
-    return this.safeSend( 'SetMute', { source, mute: onoff } );
+  setSourceMute(source, onoff = null) {
+    if (onoff == null) return this.safeSend('ToggleMute', { source });
+    return this.safeSend('SetMute', { source, mute: onoff });
   }
 
-  setSourceText( source = null, text = '' ) {
+  setSourceText(source = null, text = '') {
     // DEPRECATED FUNCTION
     // SetTextFreetype2Properties
     // input type: text_ft2_source_v2
@@ -435,30 +436,30 @@ class OBSController extends Module {
     // also, OBS won't actually update the text source if text is empty
     text = text == '' ? ' ' : text;
     source = source ?? this.default_title_source;
-    return this.multiSend( {
+    return this.multiSend({
       SetTextFreetype2Properties: { source, text },
       SetTextGDIPlusProperties: { source, text },
-    } );
+    });
   }
 
-  setStreaming( onoff = null ) {
-    if ( onoff == null ) return this.safeSend( 'StartStopStreaming' );
-    if ( onoff ) return this.safeSend( 'StartStreaming' );
-    return this.safeSend( 'StopStreaming' );
+  setStreaming(onoff = null) {
+    if (onoff == null) return this.safeSend('StartStopStreaming');
+    if (onoff) return this.safeSend('StartStreaming');
+    return this.safeSend('StopStreaming');
   }
 
-  setRecording( onoff = null ) {
-    if ( onoff == null ) return this.safeSend( 'StartStopRecording' );
-    if ( onoff ) return this.safeSend( 'StartRecording' );
-    return this.safeSend( 'StopRecording' );
+  setRecording(onoff = null) {
+    if (onoff == null) return this.safeSend('StartStopRecording');
+    if (onoff) return this.safeSend('StartRecording');
+    return this.safeSend('StopRecording');
   }
 
-  setOutput( output, onoff ) {
-    if ( onoff == true ) return this.safeSend( 'StartOutput', { outputName: output } );
-    else return this.safeSend( 'StopOutput', { outputName: output } );
+  setOutput(output, onoff) {
+    if (onoff == true) return this.safeSend('StartOutput', { outputName: output });
+    else return this.safeSend('StopOutput', { outputName: output });
   }
 
-  async setSceneItemRender( sourcename, onoff, scenename = null ) {
+  async setSceneItemRender(sourcename, onoff, scenename = null) {
     await this.getOBSStatus();
     let prog = this.currentSceneName;
     let prev = this.previewSceneName;
@@ -466,20 +467,19 @@ class OBSController extends Module {
     let args = {
       source: sourcename,
       render: onoff,
-    }
-    if ( scenename != null ) args[ 'scene-name' ] = scenename;
-    r.push( await this.safeSend( 'SetSceneItemRender', args ) );
+    };
+    if (scenename != null) args['scene-name'] = scenename;
+    r.push(await this.safeSend('SetSceneItemRender', args));
 
-    if ( this.studioMode ) {
-      if ( scenename == prog ) {
-        r.push( await this.setCurrentScene( prog ) );
-        setTimeout( () => this.setPreviewScene( prev ), this.defaultTransitionDuration + 100 );
+    if (this.studioMode) {
+      if (scenename == prog) {
+        r.push(await this.setCurrentScene(prog));
+        setTimeout(() => this.setPreviewScene(prev), this.defaultTransitionDuration + 100);
       }
     }
     return r;
   }
 }
-
 
 // class OBSCommand {
 //   constructor ( { command, options } ) {

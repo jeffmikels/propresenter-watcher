@@ -1,9 +1,9 @@
 // WS module doesn't work in browsers
-const { EventEmitter } = require( 'ws' );
-const WebSocket = require( 'ws' );
+const { EventEmitter } = require('ws');
+const WebSocket = require('ws');
 
-const { Module, ModuleTrigger, ModuleTriggerArg } = require( './module.js' );
-const { hms2secs, timestring2secs, markdown } = require( '../helpers.js' );
+const { Module, ModuleTrigger, ModuleTriggerArg } = require('./module.js');
+const { hms2secs, timestring2secs, markdown } = require('../helpers.js');
 
 class ProController extends Module {
   static name = 'pro';
@@ -11,18 +11,20 @@ class ProController extends Module {
   static supportsMultiple = true;
   static instances = [];
   static get master() {
-    for ( let i of ProController.instances ) {
-      if ( i.master ) return i;
+    for (let i of ProController.instances) {
+      if (i.master) return i;
     }
     // looks like there is no master instance... create it now
-    return new ProController( {} );
+    return new ProController({});
   }
 
-  static create( config ) {
-    return new ProController( config );
+  static create(config) {
+    return new ProController(config);
   }
 
-  get allInstances() { return this.constructor.instances; }
+  get allInstances() {
+    return this.constructor.instances;
+  }
 
   get slides() {
     return this.sd.slides;
@@ -32,11 +34,11 @@ class ProController extends Module {
     return this.sd.connected && this.remote.connected;
   }
 
-  constructor ( config, reset = false ) {
-    super( config );
+  constructor(config, reset = false) {
+    super(config);
 
-    if ( reset ) {
-      for ( let i of ProController.instances ) {
+    if (reset) {
+      for (let i of ProController.instances) {
         i.dispose();
       }
       ProController.instances.length = 0;
@@ -44,22 +46,21 @@ class ProController extends Module {
 
     // store in the static instances list
     this.id = ProController.instances.length;
-    ProController.instances.push( this );
+    ProController.instances.push(this);
 
     // setup object properties
     this.master = this.id == 0; // the first instance is by default the master instance
     this.follower = false;
     // this.options = options;
 
-    this.updateConfig( config );
+    this.updateConfig(config);
     this._registerDefaultTriggers();
-
   }
 
-  updateConfig( config ) {
-    console.log( 'NEW PRO CONFIG: ' );
-    console.log( JSON.stringify( config ) );
-    super.updateConfig( config );
+  updateConfig(config) {
+    console.log('NEW PRO CONFIG: ');
+    console.log(JSON.stringify(config));
+    super.updateConfig(config);
 
     let { host, port, sd_pass, version = 6, remote_pass } = this.config;
     this.host = host;
@@ -67,56 +68,44 @@ class ProController extends Module {
     this.version = version;
     this.sd_pass = sd_pass;
     this.remote_pass = remote_pass;
-    this.events = []
+    this.events = [];
 
     // setup connections
-    if ( this.sd ) {
+    if (this.sd) {
       this.sd.removeAllListeners();
       this.sd.close();
     }
-    this.sd = new ProSDClient( host, port, sd_pass, version, this );
-    this.events = [
-      ...this.events,
-      'sdupdate',
-      'sddata',
-      'msgupdate',
-      'sysupdate',
-      'slideupdate',
-    ]
+    this.sd = new ProSDClient(host, port, sd_pass, version, this);
+    this.events = [...this.events, 'sdupdate', 'sddata', 'msgupdate', 'sysupdate', 'slideupdate'];
 
-    this.sd.on( 'update', () => this.emit( 'sdupdate', this.fullStatus() ) );
-    this.sd.on( 'data', ( data ) => this.emit( 'sddata', data ) );
-    this.sd.on( 'msgupdate', ( data ) => this.emit( 'msgupdate', data ) );
-    this.sd.on( 'sysupdate', ( data ) => this.emit( 'sysupdate', data ) );
-    this.sd.on( 'slideupdate', ( data ) => this.emit( 'slideupdate', data ) );
+    this.sd.on('update', () => this.emit('sdupdate', this.fullStatus()));
+    this.sd.on('data', (data) => this.emit('sddata', data));
+    this.sd.on('msgupdate', (data) => this.emit('msgupdate', data));
+    this.sd.on('sysupdate', (data) => this.emit('sysupdate', data));
+    this.sd.on('slideupdate', (data) => this.emit('slideupdate', data));
 
-    if ( this.remote ) {
+    if (this.remote) {
       this.remote.removeAllListeners();
       this.remote.close();
     }
-    this.remote = new ProRemoteClient( host, port, remote_pass, version, this );
-    this.events = [
-      ...this.events,
-      'clocksupdate',
-      'remoteupdate',
-      'remotedata',
-    ];
+    this.remote = new ProRemoteClient(host, port, remote_pass, version, this);
+    this.events = [...this.events, 'clocksupdate', 'remoteupdate', 'remotedata'];
 
     this.remote.removeAllListeners();
-    this.remote.on( 'update', () => this.emit( 'remoteupdate', this.fullStatus() ) );
-    this.remote.on( 'clocksupdate', () => {
-      // this.mergeClocks(); // not reliable since the 
-      this.emit( 'clocksupdate', this.remote.status.clocks )
-    } );
-    this.remote.on( 'data', ( data ) => {
-      this.emit( 'remotedata', data );
-      if ( this.master ) {
-        for ( let i of ProController.instances ) {
-          if ( i.id == this.id ) continue;
-          if ( i.follower ) i.remote.send( data );
+    this.remote.on('update', () => this.emit('remoteupdate', this.fullStatus()));
+    this.remote.on('clocksupdate', () => {
+      // this.mergeClocks(); // not reliable since the
+      this.emit('clocksupdate', this.remote.status.clocks);
+    });
+    this.remote.on('data', (data) => {
+      this.emit('remotedata', data);
+      if (this.master) {
+        for (let i of ProController.instances) {
+          if (i.id == this.id) continue;
+          if (i.follower) i.remote.send(data);
         }
       }
-    } );
+    });
   }
 
   getInfo() {
@@ -153,7 +142,7 @@ class ProController extends Module {
   // merges the sd "timers" with the remote "clocks"
   mergeClocks() {
     // sd timers have uid, text, and seconds as int
-    // remote clocks have 
+    // remote clocks have
     // {
     //   "clockType": 1,
     //   "clockState": false,
@@ -164,14 +153,13 @@ class ProController extends Module {
     //   "clockEndTime": "--:--:--",
     //   "clockTime": "--:--:--"
     // }
-    for ( let i = 0; i < this.sd.timers.length; i++ ) {
-      let timer = this.sd.timers[ i ];
-      if ( this.remote.status.clocks[ i ] ) {
-        let clock = this.remote.status.clocks[ i ];
-        this.remote.status.clocks[ i ] = this.sd.timers[ i ] = { ...timer, ...clock };
+    for (let i = 0; i < this.sd.timers.length; i++) {
+      let timer = this.sd.timers[i];
+      if (this.remote.status.clocks[i]) {
+        let clock = this.remote.status.clocks[i];
+        this.remote.status.clocks[i] = this.sd.timers[i] = { ...timer, ...clock };
       }
     }
-
   }
 
   _registerDefaultTriggers() {
@@ -212,7 +200,7 @@ class ProController extends Module {
 }
 
 class ProSlide {
-  constructor ( uid = '', text = '', notes = '' ) {
+  constructor(uid = '', text = '', notes = '') {
     this.uid = uid;
     this.text = text;
     this.notes = notes;
@@ -221,7 +209,7 @@ class ProSlide {
 
 // listens to ProPresenter as a stage display client
 class ProSDClient extends EventEmitter {
-  constructor ( host, port, password, version = 6, parent ) {
+  constructor(host, port, password, version = 6, parent) {
     super();
     this.host = host;
     this.port = port;
@@ -242,17 +230,17 @@ class ProSDClient extends EventEmitter {
       next: new ProSlide(),
     };
 
-    this.ondata = ( data ) => this.emit( 'data', data, this );
-    this.onmsgupdate = ( data ) => this.emit( 'msgupdate', data, this );
-    this.onsysupdate = ( data ) => this.emit( 'sysupdate', data, this );
-    this.onslideupdate = ( data ) => this.emit( 'slideupdate', data, this );
-    this.ontimerupdate = ( data ) => this.emit( 'timerupdate', data, this );
+    this.ondata = (data) => this.emit('data', data, this);
+    this.onmsgupdate = (data) => this.emit('msgupdate', data, this);
+    this.onsysupdate = (data) => this.emit('sysupdate', data, this);
+    this.onslideupdate = (data) => this.emit('slideupdate', data, this);
+    this.ontimerupdate = (data) => this.emit('timerupdate', data, this);
 
     this.connect();
   }
 
   notify() {
-    this.emit( 'update', this );
+    this.emit('update', this);
   }
 
   status() {
@@ -266,9 +254,8 @@ class ProSDClient extends EventEmitter {
     };
   }
 
-
   close() {
-    if ( this.ws ) {
+    if (this.ws) {
       this.ws?.removeAllListeners();
       this.ws?.terminate();
       delete this.ws;
@@ -279,66 +266,64 @@ class ProSDClient extends EventEmitter {
     this.notify();
   }
 
-
-  reconnect( delay = 0 ) {
-    this.parent.log( `Attempting reconnect in ${delay} seconds.` );
-    clearTimeout( this.reconnectTimeout );
-    this.reconnectTimeout = setTimeout( () => {
+  reconnect(delay = 0) {
+    this.parent.log(`Attempting reconnect in ${delay} seconds.`);
+    clearTimeout(this.reconnectTimeout);
+    this.reconnectTimeout = setTimeout(() => {
       this.connect();
-    }, delay * 1000 );
+    }, delay * 1000);
   }
 
   connect() {
     this.connected = false;
     this.active = false;
 
-    clearTimeout( this.reconnectTimeout );
+    clearTimeout(this.reconnectTimeout);
 
     let url = `ws://${this.host}:${this.port}/stagedisplay`;
-    console.log( `ProSDClient: connecting to ${url}` );
-    if ( this.ws ) this.close();
+    console.log(`ProSDClient: connecting to ${url}`);
+    if (this.ws) this.close();
     try {
-      this.ws = new WebSocket( url );
-    } catch ( e ) {
+      this.ws = new WebSocket(url);
+    } catch (e) {
       this.close();
-      console.log( 'ERROR: Could not connect to ' + url );
-      console.log( e );
+      console.log('ERROR: Could not connect to ' + url);
+      console.log(e);
       return;
     }
 
-    this.ws.on( 'message', ( data ) => {
-      this.check( JSON.parse( data ) );
+    this.ws.on('message', (data) => {
+      this.check(JSON.parse(data));
       this.notify();
-    } );
+    });
 
-    this.ws.on( 'open', () => {
+    this.ws.on('open', () => {
       this.connected = true;
       this.authenticate();
       this.notify();
-    } );
+    });
 
-    this.ws.on( 'close', () => {
+    this.ws.on('close', () => {
       // this.ws.terminate();
-      this.reconnect( 10 );
+      this.reconnect(10);
       this.connected = false;
       this.active = false;
       this.notify();
-    } );
+    });
 
-    this.ws.on( 'error', ( err ) => {
-      this.parent.log( 'ProPresenter WebSocket Error:' );
+    this.ws.on('error', (err) => {
+      this.parent.log('ProPresenter WebSocket Error:');
       // this.parent.log(err);
       this.ws.terminate();
-      this.reconnect( 30 );
+      this.reconnect(30);
       this.notify();
-    } );
-
+    });
   }
 
-  send( Obj ) {
-    console.log( 'sending...' );
-    console.log( JSON.stringify( Obj ) );
-    this.ws.send( JSON.stringify( Obj ) );
+  send(Obj) {
+    console.log('sending...');
+    console.log(JSON.stringify(Obj));
+    this.ws.send(JSON.stringify(Obj));
   }
 
   authenticate() {
@@ -347,17 +332,17 @@ class ProSDClient extends EventEmitter {
       ptl: 610,
       acn: 'ath',
     };
-    this.send( auth );
+    this.send(auth);
   }
 
-  check( data ) {
-    this.parent.log( data );
+  check(data) {
+    // this.parent.log(data);
     let newdata = {};
-    switch ( data.acn ) {
+    switch (data.acn) {
       case 'ath':
         //{"acn":"ath","ath":true/false,"err":""}
-        if ( data.ath ) {
-          this.parent.log( 'ProPresenter Listener is Connected' );
+        if (data.ath) {
+          this.parent.log('ProPresenter Listener is Connected');
           this.active = true;
           newdata = { type: 'authentication', data: true };
         } else {
@@ -371,36 +356,36 @@ class ProSDClient extends EventEmitter {
         let t = {
           uid: data.uid,
           text: data.txt,
-          seconds: hms2secs( data.txt ),
+          seconds: hms2secs(data.txt),
         };
-        for ( let timer of this.timers ) {
-          if ( timer.uid == t.uid ) {
+        for (let timer of this.timers) {
+          if (timer.uid == t.uid) {
             timer.text = t.text;
             timer.seconds = t.seconds;
             exists = true;
             break;
           }
         }
-        if ( !exists ) {
-          this.timers.push( t );
+        if (!exists) {
+          this.timers.push(t);
         }
         newdata = { type: 'timer', data: t };
-        if ( this.ontimerupdate ) this.ontimerupdate( t );
+        if (this.ontimerupdate) this.ontimerupdate(t);
         break;
       case 'sys':
         // { "acn": "sys", "txt": " 11:17 AM" }
         this.system_time = {
           text: data.txt,
-          seconds: timestring2secs( data.txt ),
+          seconds: timestring2secs(data.txt),
         };
         newdata = { type: 'systime', data: this.system_time };
-        if ( this.onsysupdate ) this.onsysupdate( this.system_time );
+        if (this.onsysupdate) this.onsysupdate(this.system_time);
         break;
       case 'msg':
         // { acn: 'msg', txt: 'Test' }
         this.stage_message = data.txt;
         newdata = { type: 'message', data: this.stage_message };
-        if ( this.onmsgupdate ) this.onmsgupdate( this.stage_message );
+        if (this.onmsgupdate) this.onmsgupdate(this.stage_message);
         break;
       case 'fv':
         // we just got stage display slide information
@@ -413,8 +398,8 @@ class ProSDClient extends EventEmitter {
         // csn: current slide notes
         // ns: next slide
         // nsn: next slide notes
-        for ( let blob of data.ary ) {
-          switch ( blob.acn ) {
+        for (let blob of data.ary) {
+          switch (blob.acn) {
             case 'cs':
               this.slides.current.uid = blob.uid;
               this.slides.current.text = blob.txt;
@@ -432,15 +417,15 @@ class ProSDClient extends EventEmitter {
           }
         }
         newdata = { type: 'slides', data: this.slides };
-        if ( this.onslideupdate ) this.onslideupdate( this.slides );
+        if (this.onslideupdate) this.onslideupdate(this.slides);
     }
-    if ( this.ondata ) this.ondata( newdata, this );
+    if (this.ondata) this.ondata(newdata, this);
   }
 }
 
 // incomplete at the moment
 class ProRemoteClient extends EventEmitter {
-  constructor ( host, port, password, version = 6, parent ) {
+  constructor(host, port, password, version = 6, parent) {
     super();
     this.connected = false;
     this.controlling = false;
@@ -472,100 +457,98 @@ class ProRemoteClient extends EventEmitter {
     this.removeAllListeners();
   }
 
-  reconnect( delay = 0 ) {
-    this.parent.log( `Attempting reconnect in ${delay} seconds.` );
-    clearTimeout( this.reconnectTimeout );
-    this.reconnectTimeout = setTimeout( () => {
+  reconnect(delay = 0) {
+    this.parent.log(`Attempting reconnect in ${delay} seconds.`);
+    clearTimeout(this.reconnectTimeout);
+    this.reconnectTimeout = setTimeout(() => {
       this.connect();
-    }, delay * 1000 );
+    }, delay * 1000);
   }
-
 
   connect() {
     this.connected = false;
     this.controlling = false;
 
-    clearTimeout( this.reconnectTimeout );
+    clearTimeout(this.reconnectTimeout);
 
     let url = `ws://${this.host}:${this.port}/remote`;
-    console.log( `ProRemote: connecting to ${url}` );
-    if ( this.ws ) this.close();
+    console.log(`ProRemote: connecting to ${url}`);
+    if (this.ws) this.close();
     try {
-      this.ws = new WebSocket( url );
-    } catch ( e ) {
+      this.ws = new WebSocket(url);
+    } catch (e) {
       this.close();
-      console.log( 'ERROR: Could not connect to ' + url );
-      console.log( e );
+      console.log('ERROR: Could not connect to ' + url);
+      console.log(e);
       return;
     }
 
-    this.ws.on( 'message', ( data ) => {
+    this.ws.on('message', (data) => {
       // sometimes ProPresenter sends invalid data... be resilient
       try {
-        data = JSON.parse( data );
-        this.parent.log( data );
-        this.handleData( data );
-      } catch ( e ) {
-        this.parent.log( 'RECEIVED INVALID JSON DATA' );
+        data = JSON.parse(data);
+        this.parent.log(data);
+        this.handleData(data);
+      } catch (e) {
+        this.parent.log('RECEIVED INVALID JSON DATA');
         return;
       }
       // this.notify();
-    } );
-    this.ws.on( 'open', () => {
+    });
+    this.ws.on('open', () => {
       this.authenticate();
       this.notify();
-    } );
-    this.ws.on( 'close', () => {
+    });
+    this.ws.on('close', () => {
       this.connected = false;
       this.controlling = false;
-      this.reconnect( 10 );
+      this.reconnect(10);
       this.notify();
-    } );
-    this.ws.on( 'error', () => {
+    });
+    this.ws.on('error', () => {
       this.connected = false;
       this.controlling = false;
-      this.reconnect( 30 );
+      this.reconnect(30);
       this.notify();
-    } );
+    });
   }
 
   // notify is used for any status updates
   notify() {
-    this.emit( 'update', this );
+    this.emit('update', this);
   }
 
-  send( Obj, callback = null ) {
+  send(Obj, callback = null) {
     // register callback if there is one.
-    if ( typeof callback == 'function' ) {
+    if (typeof callback == 'function') {
       // fix api bug
       let responseAction = Obj.action;
-      if ( Obj.action == 'presentationRequest' )
-        responseAction = 'presentationCurrent';
-      this.callbacks[ responseAction ] = callback;
+      if (Obj.action == 'presentationRequest') responseAction = 'presentationCurrent';
+      this.callbacks[responseAction] = callback;
     }
-    console.log( 'sending...' );
-    console.log( JSON.stringify( Obj ) );
-    this.ws.send( JSON.stringify( Obj ) );
+    console.log('sending...');
+    console.log(JSON.stringify(Obj));
+    this.ws.send(JSON.stringify(Obj));
   }
 
   authenticate() {
     let auth = {
       password: this.password,
-      protocol: this.version == 7 ? '701' : '600',
+      protocol: this.version == 7 ? '710' : '600',
       action: 'authenticate',
     };
-    this.send( auth );
+    this.send(auth);
   }
 
-  flattenPlaylist( playlistObj ) {
+  flattenPlaylist(playlistObj) {
     let flattened = [];
-    switch ( playlistObj.playlistType ) {
+    switch (playlistObj.playlistType) {
       case 'playlistTypePlaylist':
         flattened = playlistObj.playlist;
         break;
       case 'playlistTypeGroup':
-        for ( let playlist of playlistObj.playlist ) {
-          flattened.push( ...this.flattenPlaylist( playlist ) );
+        for (let playlist of playlistObj.playlist) {
+          flattened.push(...this.flattenPlaylist(playlist));
         }
         break;
     }
@@ -582,20 +565,20 @@ class ProRemoteClient extends EventEmitter {
     this.subscribeClocks();
   }
 
-  handleData( data ) {
+  handleData(data) {
     // process data for this class instance
-    switch ( data.action ) {
+    switch (data.action) {
       case 'authenticate':
-        if ( data.authenticated == 1 ) this.connected = true;
-        if ( data.controller == 1 ) this.controlling = true;
+        if (data.authenticated == 1) this.connected = true;
+        if (data.controller == 1) this.controlling = true;
 
-        if ( this.connected ) this.loadStatus();
+        if (this.connected) this.loadStatus();
         break;
       case 'libraryRequest':
         this.status.library = data.library;
         break;
       case 'playlistRequestAll':
-        this.status.playlists = this.flattenPlaylist( data.playlistAll );
+        this.status.playlists = this.flattenPlaylist(data.playlistAll);
         break;
       case 'presentationCurrent':
         this.status.currentPresentation = data.presentation;
@@ -605,8 +588,8 @@ class ProRemoteClient extends EventEmitter {
         break;
       case 'presentationTriggerIndex':
         this.status.currentSlideIndex = +data.slideIndex;
-        if ( this.status.currentPresentation != data.presentationPath ) {
-          this.getPresentation( data.presentationPath );
+        if (this.status.currentPresentation != data.presentationPath) {
+          this.getPresentation(data.presentationPath);
         }
         break;
       case 'clockRequest':
@@ -614,116 +597,116 @@ class ProRemoteClient extends EventEmitter {
         this.status.clocks = data.clockInfo;
         this.addClockTypeText();
         this.fixClockTimeData();
-        this.emit( 'clocksupdate' );
+        this.emit('clocksupdate');
         break;
       case 'clockNameChanged':
         let index = data.clockIndex;
-        if ( this.status.clocks[ index ] ) this.status.clocks[ index ].clockName = data.clockName;
-        this.emit( 'clocksupdate' );
+        if (this.status.clocks[index]) this.status.clocks[index].clockName = data.clockName;
+        this.emit('clocksupdate');
         break;
       case 'clockCurrentTimes':
         let didchange = false;
-        if ( this.status.clocks.length > 0 ) {
-          for ( let i = 0; i < data.clockTimes.length; i++ ) {
-            if ( this.status.clocks[ i ] ) {
-              if ( this.status.clocks[ i ].clockTime != data.clockTimes[ i ] ) {
-                this.status.clocks[ i ].clockTime = data.clockTimes[ i ];
-                this.status.clocks[ i ].updated = true;
+        if (this.status.clocks.length > 0) {
+          for (let i = 0; i < data.clockTimes.length; i++) {
+            if (this.status.clocks[i]) {
+              if (this.status.clocks[i].clockTime != data.clockTimes[i]) {
+                this.status.clocks[i].clockTime = data.clockTimes[i];
+                this.status.clocks[i].updated = true;
                 didchange = true;
               } else {
-                this.status.clocks[ i ].updated = false;
+                this.status.clocks[i].updated = false;
               }
             }
           }
         }
-        if ( didchange ) {
+        if (didchange) {
           this.fixClockTimeData();
-          this.emit( 'clocksupdate' );
+          this.emit('clocksupdate');
         }
         break;
       case 'clockStartStop':
         let i = data.clockIndex;
-        if ( this.status.clocks[ i ] ) {
-          let clock = this.status.clocks[ i ];
+        if (this.status.clocks[i]) {
+          let clock = this.status.clocks[i];
           // I'm ignoring data.clockInfo because we don't know what the three items are
           clock.clockState = data.clockState == 1; // reported as int for some reason
           clock.clockTime = data.clockTime;
         }
-        this.emit( 'clocksupdate' );
+        this.emit('clocksupdate');
         break;
       default:
         break;
     }
 
     // handle update stream
-    this.emit( 'data', data, this );
+    this.emit('data', data, this);
 
     // handle callbacks
-    if ( typeof this.callbacks[ data.action ] == 'function' ) {
-      this.callbacks[ data.action ]( data );
-      delete this.callbacks[ data.action ];
+    if (typeof this.callbacks[data.action] == 'function') {
+      this.callbacks[data.action](data);
+      delete this.callbacks[data.action];
     }
   }
 
   addClockTypeText() {
-    let types = [ 'Countdown', 'Countdown To Time', 'Elapsed Time' ];
-    for ( let c of this.status.clocks ) {
-      c.clockTypeText = types[ c.clockType ];
+    let types = ['Countdown', 'Countdown To Time', 'Elapsed Time'];
+    for (let c of this.status.clocks) {
+      c.clockTypeText = types[c.clockType];
     }
   }
   fixClockTimeData() {
-    for ( let c of this.status.clocks ) {
+    for (let c of this.status.clocks) {
       c.text = c.clockTime;
-      c.seconds = hms2secs( c.clockTime );
+      c.seconds = hms2secs(c.clockTime);
       c.over = c.seconds < 0;
       c.running = c.clockState;
     }
   }
 
-  action( action, callback = null ) {
-    this.send( { action }, callback );
+  action(action, callback = null) {
+    this.send({ action }, callback);
   }
 
-  startClock( clockIndex, callback = null ) {
-    this.send( { action: "clockStart", clockIndex }, callback );
+  startClock(clockIndex, callback = null) {
+    this.send({ action: 'clockStart', clockIndex }, callback);
   }
 
-  stopClock( clockIndex, callback = null ) {
-    this.send( { action: "clockStop", clockIndex }, callback );
+  stopClock(clockIndex, callback = null) {
+    this.send({ action: 'clockStop', clockIndex }, callback);
   }
 
-  resetClock( clockIndex, callback = null ) {
-    this.send( { action: "clockReset", clockIndex }, callback );
+  resetClock(clockIndex, callback = null) {
+    this.send({ action: 'clockReset', clockIndex }, callback);
   }
 
-  subscribeClocks( callback = null ) {
-    this.action( 'clockStartSendingCurrentTime', callback );
+  subscribeClocks(callback = null) {
+    this.action('clockStartSendingCurrentTime', callback);
   }
 
-  unsubscribeClocks( callback = null ) {
-    this.action( 'clockStopSendingCurrentTime', callback );
+  unsubscribeClocks(callback = null) {
+    this.action('clockStopSendingCurrentTime', callback);
   }
 
-  getClocks( callback = null ) {
-    this.action( 'clockRequest', callback );
+  getClocks(callback = null) {
+    this.action('clockRequest', callback);
   }
 
-  getLibrary( callback = null ) {
-    this.action( 'libraryRequest', callback );
+  getLibrary(callback = null) {
+    this.action('libraryRequest', callback);
   }
 
-  getPlaylists( callback = null ) {
-    this.action( 'playlistRequestAll', callback );
+  getPlaylists(callback = null) {
+    this.action('playlistRequestAll', callback);
   }
 
-  getPresentation( path = null, quality = 200, callback = null ) {
-    if ( path == null ) {
+  getPresentation(path = null, quality = 200, callback = null) {
+    if (path == null) {
       this.send(
         {
           action: 'presentationCurrent',
           presentationSlideQuality: quality,
         },
-        callback
+        callback,
       );
     } else {
       this.send(
@@ -732,44 +715,43 @@ class ProRemoteClient extends EventEmitter {
           presentationPath: path,
           presentationSlideQuality: quality,
         },
-        callback
+        callback,
       );
     }
   }
 
-  getCurrentSlideIndex( callback = null ) {
-    this.action( 'presentationSlideIndex', callback );
+  getCurrentSlideIndex(callback = null) {
+    this.action('presentationSlideIndex', callback);
   }
 
-  triggerSlide( index = 0, path = null, callback = null ) {
-    if ( !this.controlling ) return false;
-    if ( path == null && this.status.currentPresentation == null ) return false;
-    if ( path == null )
-      path = this.status.currentPresentation.presentationCurrentLocation;
+  triggerSlide(index = 0, path = null, callback = null) {
+    if (!this.controlling) return false;
+    if (path == null && this.status.currentPresentation == null) return false;
+    if (path == null) path = this.status.currentPresentation.presentationCurrentLocation;
     this.send(
       {
         action: 'presentationTriggerIndex',
         slideIndex: this.version == 7 ? index.toString() : index,
         presentationPath: path,
       },
-      callback
+      callback,
     );
     return true;
   }
 
-  next( callback = null ) {
-    if ( this.status.currentPresentation == null ) return false;
-    if ( this.status.currentSlideIndex == null ) return false;
+  next(callback = null) {
+    if (this.status.currentPresentation == null) return false;
+    if (this.status.currentSlideIndex == null) return false;
     let nextIndex = this.status.currentSlideIndex + 1;
-    return this.triggerSlide( nextIndex, null, callback );
+    return this.triggerSlide(nextIndex, null, callback);
   }
 
-  prev( callback = null ) {
-    if ( this.status.currentPresentation == null ) return false;
-    if ( this.status.currentSlideIndex == null ) return false;
+  prev(callback = null) {
+    if (this.status.currentPresentation == null) return false;
+    if (this.status.currentSlideIndex == null) return false;
     let nextIndex = this.status.currentSlideIndex - 1;
-    if ( nextIndex < 0 ) nextIndex = 0;
-    return this.triggerSlide( nextIndex, null, callback );
+    if (nextIndex < 0) nextIndex = 0;
+    return this.triggerSlide(nextIndex, null, callback);
   }
 }
 

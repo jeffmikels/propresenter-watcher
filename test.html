@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Test</title>
+  </head>
+  <body>
+    <script>
+      let ws;
+      let port = 60157;
+      let protocol = 710;
+      let sdurl = `ws://localhost:${port}/stagedisplay`;
+      let sdauth = { pwd: 'av', ptl: 610, acn: 'ath' };
+      let controlurl = `ws://localhost:${port}/remote`;
+      let controlauth = { password: 'control', protocol: '701', action: 'authenticate' };
+      function send(obj) {
+        let msg = JSON.stringify(obj);
+        ws.send(msg);
+      }
+      
+      function remote(){
+        send(controlauth)
+      }
+      
+      function sd() {
+        send(sdauth)
+      }
+      
+      function connect(url) {
+        ws = new WebSocket(url);
+        ws.onmessage = function (event) {
+          const data = JSON.parse(event.data);
+          console.log(data);
+        };
+        ws.onerror = function (event) {
+          console.log(event);
+        };
+      }
+    </script>
+  </body>
+</html>

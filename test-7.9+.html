@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Test 7.9 API</title>
+  </head>
+  <body>
+    <script>
+      let host = 'localhost';
+      let port = 60157;
+      let apiRoot = `http://${host}:${port}`;
+      let useApi = false;
+
+      // function* creates an iterator that can use the `yield` keyword
+      async function* chunkIterator(response) {
+        const reader = response.body.getReader();
+        const utf8Decoder = new TextDecoder('utf-8');
+        let accumulator = '';
+
+        // propresenter chunk terminator is double enter
+        const re = /\r\n\r\n/gm;
+        let match;
+
+        for (;;) {
+          let { value: chunk, done: readerDone } = await reader.read();
+          chunkString = chunk ? utf8Decoder.decode(chunk) : '';
+          console.log(`
+----- received ${chunk.length} bytes ----------------
+${chunkString}
+-----------------------------------------------------`);
+
+          accumulator += chunkString;
+          let accumulated = accumulator.split('\r\n\r\n');
+          if (accumulated.length < 2) {
+            if (readerDone) break;
+            continue;
+          }
+
+          // retain the final item for later
+          console.log(accumulated);
+          accumulator = accumulated.splice(accumulated.length - 1)[0];
+
+          // yield the rest
+          for (let singleChunk of accumulated) {
+            yield singleChunk;
+          }
+        }
+      }
+
+      async function call(endpoint, config = null, onchunk = null) {
+        let url = `${apiRoot}${endpoint}`;
+        if (onchunk != null && config?.method != 'POST') url += '?chunked=true';
+        console.log(url);
+        let response = await fetch(url, config);
+        if (response.ok) {
+          if (onchunk == null) {
+            response.data = await response.json();
+            console.log(response.data);
+          } else {
+            for await (let chunk of chunkIterator(response)) {
+              onchunk(chunk);
+            }
+          }
+        }
+        return response;
+      }
+
+      async function getVersion() {
+        let response = await call(`/version`);
+        if (response.ok) {
+          useApi = true;
+          subscribe();
+        }
+      }
+
+      function connect() {
+        getVersion();
+      }
+
+      async function subscribe() {
+        // capture/status
+        // look/current
+        // messages
+        // playlist/current
+        // presentation/current
+        // presentation/slide_index
+        // stage/message
+        // status/layers
+        // status/stage_screens
+        // status/audience_screens
+        // status/screens
+        // status/slide
+        // timers
+        // timers/current
+        // timer/system_time
+        // timer/video_countdown
+        call(
+          '/v1/status/updates',
+          {
+            method: 'POST',
+            mode: 'cors',
+            headers: {
+              'Content-Type': 'application/json',
+              Origin: 'localhost',
+            },
+            body: JSON.stringify([
+              // 'capture/status',
+              // 'look/current',
+              // // the chunked messages endpoint doesn't work in 7.9 beta
+              // // 'messages',
+              // 'playlist/current',
+
+              // this will yield too much data, the response chunks get merged together wrong
+              // see: https://gist.github.com/jeffmikels/9f01e9f938dbe9af9072ca9be9cec7e0
+              'presentation/current',
+
+              'presentation/slide_index',
+              // 'stage/message',
+              // 'status/layers',
+              // 'status/stage_screens',
+              // 'status/audience_screens',
+              // 'status/screens',
+              // 'status/slide',
+              // 'timers',
+              // 'timers/current',
+              // 'timer/system_time',
+              // 'timer/video_countdown',
+            ]),
+          },
+          handleChunk,
+        );
+      }
+
+      function handleChunk(chunk) {
+        console.log(`HANDLING CHUNK: ${chunk}`);
+        let chunkData = JSON.parse(chunk);
+        console.log(chunkData);
+      }
+    </script>
+  </body>
+</html>
